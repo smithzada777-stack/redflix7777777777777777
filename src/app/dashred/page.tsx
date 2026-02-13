@@ -101,15 +101,28 @@ export default function AdminDashboard() {
         try {
             const response = await axios.post('/api/payment', {
                 amount: pixAmount,
-                description: `Cobranca Manual - ${pixName}`,
-                payerEmail: 'admin@redflix.com', // Admin generated
+                description: `Cobranca Manual - Dash`,
+                payerEmail: 'venda.manual@dash.com', // Identificador de venda manual
             });
 
-            const { qrcode_content, qrcode_image_url } = response.data;
+            const { qrcode_content, qrcode_image_url, transaction_id } = response.data;
 
             if (qrcode_content) {
                 setGeneratedPixString(qrcode_content);
                 setGeneratedPixImage(qrcode_image_url);
+
+                // --- NOVO: Criar Lead para rastreio ---
+                const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+                await addDoc(collection(db, "leads"), {
+                    email: 'venda.manual@dash.com',
+                    phone: '00000000000',
+                    plan: 'Venda Manual',
+                    price: pixAmount,
+                    status: 'pending',
+                    transactionId: transaction_id, // Link com o pagamento
+                    createdAt: serverTimestamp()
+                });
+
             } else {
                 throw new Error('PushinPay não retornou dados.');
             }
@@ -212,14 +225,39 @@ export default function AdminDashboard() {
             .filter(l => l.status === 'approved')
             .reduce((acc, curr) => acc + parsePrice(curr.price), 0);
 
-        const pendingRevenue = searchFiltered
-            .filter(l => l.status === 'pending')
-            .reduce((acc, curr) => acc + parsePrice(curr.price), 0);
-
         const totalApproved = searchFiltered.filter(l => l.status === 'approved').length;
         const totalPending = searchFiltered.filter(l => l.status === 'pending').length;
         const totalLeads = searchFiltered.length;
         const activeConversion = totalLeads > 0 ? (totalApproved / totalLeads) * 100 : 0;
+        const averageTicket = totalApproved > 0 ? totalRevenue / totalApproved : 0;
+
+        // Sales and Leads TODAY
+        const salesTodayCount = leads.filter(l => l.status === 'approved' && l.createdAt && l.createdAt.toDate() >= startOfDay).length;
+        const revenueToday = leads.filter(l => l.status === 'approved' && l.createdAt && l.createdAt.toDate() >= startOfDay).reduce((acc, curr) => acc + parsePrice(curr.price), 0);
+        const leadsToday = leads.filter(l => l.createdAt && l.createdAt.toDate() >= startOfDay).length;
+
+        // Weekly Sales Data for Chart
+        const weeklyData = Array.from({ length: 7 }).map((_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (6 - i));
+            date.setHours(0, 0, 0, 0);
+            const dayStart = date.getTime();
+            const nextDay = dayStart + 24 * 60 * 60 * 1000;
+
+            const daySales = leads.filter(l =>
+                l.status === 'approved' &&
+                l.createdAt &&
+                l.createdAt.toDate().getTime() >= dayStart &&
+                l.createdAt.toDate().getTime() < nextDay
+            ).length;
+
+            return {
+                day: date.toLocaleDateString('pt-BR', { weekday: 'short' }),
+                count: daySales
+            };
+        });
+
+        const maxSales = Math.max(...weeklyData.map(d => d.count), 5);
 
         // Best Selling Plan
         const planCounts: Record<string, number> = {};
@@ -230,21 +268,25 @@ export default function AdminDashboard() {
         });
         const bestSellingPlan = Object.entries(planCounts).sort((a, b) => b[1] - a[1])[0];
 
-        // Expiring Soon (All Approved sorted by expiration)
-        const expiringLeads = leads.filter(l => {
-            return l.status === 'approved';
-        }).sort((a, b) => getDaysRemaining(a.createdAt, a.plan) - getDaysRemaining(b.createdAt, b.plan));
+        // Expiring Soon
+        const expiringLeads = leads.filter(l => l.status === 'approved')
+            .sort((a, b) => getDaysRemaining(a.createdAt, a.plan) - getDaysRemaining(b.createdAt, b.plan));
 
         return {
             data: searchFiltered.slice(0, rowsPerPage),
             totalFiltered: searchFiltered.length,
             expiring: expiringLeads,
             revenue: totalRevenue,
-            pendingRevenue: pendingRevenue,
+            revenueToday,
+            salesToday: salesTodayCount,
+            leadsToday,
+            avgTicket: averageTicket,
             approved: totalApproved,
             pending: totalPending,
             leads: totalLeads,
             conversion: activeConversion,
+            weeklyData,
+            maxSales,
             bestPlan: bestSellingPlan ? bestSellingPlan[0] : 'N/A',
             bestPlanCount: bestSellingPlan ? bestSellingPlan[1] : 0
         };
@@ -361,14 +403,17 @@ export default function AdminDashboard() {
         let discountText = discount > 0 ? ` com *${discount}% de DESCONTO* 🔥` : '';
 
         if (type === 'renew') {
-            msg = `Olá! Tudo bem? 😃\n\nNós da *RedFlix* vimos que seu plano *${selectedLead.plan}* vence em *${daysLeft} dias*. 📅\n\nNão fique sem assistir! Renove agora (Plano Mensal)${discountText} e continue aproveitando. \n\n👇 *Pague agora com desconto:*\n${link}`;
+            msg = `Olá! Tudo bem? 😃\n\nNós da *RedFlix* vimos que seu acesso *${selectedLead.plan}* está próximo do vencimento (faltam *${daysLeft} dias*). 📅\n\nPara agradecer sua fidelidade, liberei uma condição especial para você renovar hoje${discountText} e não perder seus canais, filmes e séries favoritos! 🎬\n\n👇 *Acesse seu link exclusivo de renovação:*\n${link}\n\nQualquer dúvida, estou à disposição! 🤝`;
         } else if (type === 'upgrade3') {
-            msg = `Olá! Tenho uma proposta imperdível pra você! 🚀\n\nQue tal trocar seu plano atual pelo *Trimestral*? \n\nVocê garante 3 meses de RedFlix${discountText}, economiza dinheiro e não precisa se preocupar com mensalidade tão cedo! 😉\n\n👇 *Quero o Plano Trimestral:*\n${link}`;
+            msg = `Olá! Tenho uma novidade VIP pra você! 🚀\n\nVi que você gosta do nosso serviço e decidi te liberar um upgrade pro *Plano Trimestral* (90 dias de acesso)${discountText}.\n\nAlém de economizar bastante, você fica livre de mensalidades por 3 meses inteiros e garante estabilidade total no seu sinal! 😉\n\n👇 *Aproveitar Upgrade Trimestral:*\n${link}\n\nBora subir de nível? 💎`;
         } else if (type === 'upgrade6') {
-            msg = `Opa! Tudo certo? 😎\n\nVocê já é nosso cliente VIP, então consegui liberar uma condição especial no *Plano Semestral*! 💎\n\nAssine 6 meses de uma vez${discountText} e fique tranquilo até o meio do ano que vem! É muita economia. 💸\n\n👇 *Quero o Plano Semestral:*\n${link}`;
+            msg = `E aí! Tudo certo? 😎\n\nLiberei aqui no sistema a nossa melhor oferta de fidelidade exclusiva para clientes ativos!\n\nO *Plano Semestral* (180 dias)${discountText}. É a sua chance de garantir o RedFlix pelo melhor preço do mercado e esquecer boletos até o meio do ano! 💸\n\n👇 *Garantir Plano Semestral (Vaga Única):*\n${link}\n\nEssa oferta expira em breve, aproveite! 🔥`;
         }
 
-        return `https://wa.me/${selectedLead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+        return {
+            waLink: `https://wa.me/${selectedLead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`,
+            checkoutLink: link
+        };
     };
 
     // --- Loading / Login UI ---
@@ -491,50 +536,103 @@ export default function AdminDashboard() {
 
                         {/* KPI Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {/* Revenue */}
-                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5 relative overflow-hidden">
+                            {/* Revenue Today */}
+                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <TrendingUp size={60} />
+                                </div>
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="p-2 bg-green-500/10 rounded-lg text-green-500"><DollarSign size={16} /></div>
-                                    <div className="h-4 w-12 bg-white/5 rounded flex items-end justify-between px-1 pb-0.5">
-                                        <div className="w-0.5 bg-green-500/50 h-[40%] rounded-t"></div>
-                                        <div className="w-0.5 bg-green-500/50 h-[70%] rounded-t"></div>
-                                        <div className="w-0.5 bg-green-500/50 h-[50%] rounded-t"></div>
-                                        <div className="w-0.5 bg-green-500 h-[100%] rounded-t"></div>
-                                    </div>
+                                    <span className="text-[10px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded font-bold">Hoje</span>
                                 </div>
-                                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Receita Gerada</h3>
-                                <p className="text-xl font-black text-white italic mt-1">{formatCurrency(metrics.revenue)}</p>
+                                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Faturamento Hoje</h3>
+                                <p className="text-2xl font-black text-white italic mt-1">{formatCurrency(metrics.revenueToday)}</p>
+                                <p className="text-[9px] text-gray-600 mt-1">{metrics.salesToday} vendas aprovadas</p>
                             </div>
 
-                            {/* Pending Sales */}
-                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5 relative overflow-hidden">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500"><Clock size={16} /></div>
-                                    <span className="text-[9px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded font-bold">Ação Necessária</span>
+                            {/* Ticket Médio */}
+                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <Percent size={60} />
                                 </div>
-                                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Vendas Pendentes</h3>
-                                <p className="text-xl font-black text-white italic mt-1">{formatCurrency(metrics.pendingRevenue)}</p>
-                                <p className="text-[9px] text-gray-600 mt-1">{metrics.pending} aguardando pagamento</p>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500"><BarChart3 size={16} /></div>
+                                </div>
+                                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Ticket Médio</h3>
+                                <p className="text-2xl font-black text-white italic mt-1">{formatCurrency(metrics.avgTicket)}</p>
+                                <p className="text-[9px] text-gray-600 mt-1">Valor médio por venda</p>
                             </div>
 
-                            {/* Best Selling Plan */}
-                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5 relative overflow-hidden">
+                            {/* Leads Today */}
+                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500"><CheckCircle2 size={16} /></div>
+                                    <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500"><Users size={16} /></div>
+                                    <span className="text-[10px] bg-purple-500/10 text-purple-500 px-2 py-0.5 rounded font-bold">Hoje</span>
                                 </div>
-                                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Plano Mais Vendido</h3>
-                                <p className="text-lg font-black text-white italic mt-1 truncate">{metrics.bestPlan}</p>
-                                <p className="text-[9px] text-gray-600 mt-1">{metrics.bestPlanCount} vendas totais</p>
+                                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Novos Leads</h3>
+                                <p className="text-2xl font-black text-white italic mt-1">{metrics.leadsToday}</p>
+                                <p className="text-[9px] text-gray-600 mt-1">Visitantes no checkout</p>
                             </div>
 
                             {/* Conversion */}
-                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5 relative overflow-hidden">
+                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500"><TrendingUp size={16} /></div>
+                                    <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500"><Percent size={16} /></div>
+                                    <div className="h-4 w-12 bg-white/5 rounded flex items-end justify-between px-1 pb-0.5">
+                                        <div className="w-0.5 bg-orange-500/50 h-[40%] rounded-t"></div>
+                                        <div className="w-0.5 bg-orange-500/50 h-[70%] rounded-t"></div>
+                                        <div className="w-0.5 bg-orange-500 h-[100%] rounded-t"></div>
+                                    </div>
                                 </div>
                                 <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Taxa de Conversão</h3>
-                                <p className="text-xl font-black text-white italic mt-1">{metrics.conversion.toFixed(1)}%</p>
-                                <p className="text-[9px] text-gray-600 mt-1">Leads para Vendas</p>
+                                <p className="text-2xl font-black text-white italic mt-1">{metrics.conversion.toFixed(1)}%</p>
+                                <p className="text-[9px] text-gray-600 mt-1">{metrics.approved} de {metrics.leads} leads</p>
+                            </div>
+                        </div>
+
+                        {/* Chart and Best Plan */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            {/* Weekly Sales Chart */}
+                            <div className="lg:col-span-2 bg-[#0a0a0a] p-6 rounded-2xl border border-white/5">
+                                <div className="flex justify-between items-center mb-8">
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-white italic">Vendas nos últimos 7 dias</h3>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-primary" />
+                                        <span className="text-[9px] text-gray-500 font-bold uppercase">Volume de Vendas</span>
+                                    </div>
+                                </div>
+                                <div className="h-48 w-full flex items-end justify-between gap-2 px-2">
+                                    {metrics.weeklyData.map((d, i) => (
+                                        <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
+                                            <div className="relative w-full flex justify-center items-end h-full">
+                                                <div
+                                                    className="w-full max-w-[30px] bg-white/5 border-t border-x border-white/10 rounded-t-lg group-hover:bg-primary/20 group-hover:border-primary/30 transition-all duration-500 relative"
+                                                    style={{ height: `${(d.count / metrics.maxSales) * 100}%`, minHeight: '4px' }}
+                                                >
+                                                    {d.count > 0 && (
+                                                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-black text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            {d.count}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <span className="text-[8px] font-black uppercase text-gray-600 group-hover:text-white transition-colors">
+                                                {d.day}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Best Plan Card Upgrade */}
+                            <div className="bg-gradient-to-br from-primary/20 to-black p-8 rounded-2xl border-2 border-primary/20 flex flex-col justify-center items-center text-center relative overflow-hidden group">
+                                <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 blur-[50px] rounded-full group-hover:bg-primary/40 transition-all" />
+                                <Star className="text-primary mb-4 animate-bounce" size={32} />
+                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-2">Plano Campeão</h3>
+                                <p className="text-2xl font-black text-white italic uppercase tracking-tighter leading-tight">{metrics.bestPlan}</p>
+                                <div className="mt-6 py-2 px-6 bg-primary text-white rounded-full text-[10px] font-black tracking-widest">
+                                    {metrics.bestPlanCount} VENDAS TOTAIS
+                                </div>
                             </div>
                         </div>
 
@@ -765,12 +863,12 @@ export default function AdminDashboard() {
                                     <div className="mb-8 bg-white/5 p-4 rounded-xl border border-white/5">
                                         <label className="flex items-center justify-between text-xs font-bold text-gray-300 mb-2 uppercase tracking-wide">
                                             <span className="flex items-center gap-2"><Percent size={14} className="text-primary" /> Aplicar Desconto Especial</span>
-                                            <span className="text-primary">{discount}% OFF</span>
+                                            <span className="text-primary font-black">{discount}% OFF</span>
                                         </label>
                                         <input
                                             type="range"
                                             min="0"
-                                            max="30"
+                                            max="50"
                                             step="5"
                                             value={discount}
                                             onChange={(e) => setDiscount(Number(e.target.value))}
@@ -778,50 +876,47 @@ export default function AdminDashboard() {
                                         />
                                         <div className="flex justify-between text-[9px] text-gray-600 mt-2 font-mono">
                                             <span>0%</span>
-                                            <span>15%</span>
-                                            <span>30%</span>
+                                            <span>25%</span>
+                                            <span>50%</span>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <a
-                                            href={generateMessage('renew')}
-                                            target="_blank"
-                                            onClick={() => setSelectedLead(null)}
-                                            className="block w-full text-left p-4 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-green-500/50 rounded-xl transition-all group"
-                                        >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-xs font-black text-white uppercase tracking-widest">Renovação Simples</span>
-                                                <span className="text-[10px] bg-green-500/20 text-green-500 px-2 py-0.5 rounded font-bold">Padrão</span>
-                                            </div>
-                                            <p className="text-[11px] text-gray-500 group-hover:text-gray-300">"Olá! Seu plano vence em X dias. Renove agora..."</p>
-                                        </a>
-
-                                        <a
-                                            href={generateMessage('upgrade3')}
-                                            target="_blank"
-                                            onClick={() => setSelectedLead(null)}
-                                            className="block w-full text-left p-4 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-purple-500/50 rounded-xl transition-all group"
-                                        >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-xs font-black text-white uppercase tracking-widest">Upsell Trimestral</span>
-                                                <span className="text-[10px] bg-purple-500/20 text-purple-500 px-2 py-0.5 rounded font-bold">Ticket Médio  🚀</span>
-                                            </div>
-                                            <p className="text-[11px] text-gray-500 group-hover:text-gray-300">Oferece o plano de 3 meses com vantagem de economia.</p>
-                                        </a>
-
-                                        <a
-                                            href={generateMessage('upgrade6')}
-                                            target="_blank"
-                                            onClick={() => setSelectedLead(null)}
-                                            className="block w-full text-left p-4 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-blue-500/50 rounded-xl transition-all group"
-                                        >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-xs font-black text-white uppercase tracking-widest">Upsell Semestral</span>
-                                                <span className="text-[10px] bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded font-bold">Fidelização 💎</span>
-                                            </div>
-                                            <p className="text-[11px] text-gray-500 group-hover:text-gray-300">Proposta agressiva para fechar 6 meses de uma vez.</p>
-                                        </a>
+                                    <div className="space-y-4">
+                                        {[
+                                            { type: 'renew' as const, title: 'Renovação VIP (Mensal)', color: 'border-green-500/30' },
+                                            { type: 'upgrade3' as const, title: 'Upsell Trimestral (90 Dias)', color: 'border-purple-500/30' },
+                                            { type: 'upgrade6' as const, title: 'Fidelização Semestral (180 Dias)', color: 'border-blue-500/30' }
+                                        ].map((opt) => {
+                                            const { waLink, checkoutLink } = generateMessage(opt.type);
+                                            return (
+                                                <div key={opt.type} className={`bg-white/5 p-4 rounded-xl border ${opt.color} flex flex-col gap-3 group`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{opt.title}</span>
+                                                        <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded font-bold uppercase">WhatsApp</span>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <a
+                                                            href={waLink}
+                                                            target="_blank"
+                                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black py-3 rounded-lg flex items-center justify-center gap-2 transition-all uppercase tracking-widest"
+                                                        >
+                                                            <Smartphone size={14} />
+                                                            Enviar via WhatsApp
+                                                        </a>
+                                                        <button
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(checkoutLink);
+                                                                alert('Link de pagamento copiado!');
+                                                            }}
+                                                            className="px-4 bg-white/10 hover:bg-white text-gray-400 hover:text-black rounded-lg transition-all"
+                                                            title="Copiar Link de Pagamento"
+                                                        >
+                                                            <Copy size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>

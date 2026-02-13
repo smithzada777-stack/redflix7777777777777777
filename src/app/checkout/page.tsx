@@ -72,19 +72,19 @@ function CheckoutContent() {
 
         // 1. Monitoramento Direto da Transação
         if (activePixId) {
-            const tid = activePixId.toLowerCase();
+            const tid = activePixId; // Removido toLowerCase para evitar erros de case
             console.log(`Monitorando transação: ${tid}`);
             const unsubscribePayment = onSnapshot(doc(db, "payments", tid), (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
                     const status = (data.status || '').toLowerCase();
                     console.log(`Status do pagamento (payments/${tid}):`, status);
-                    if (['paid', 'approved', 'confirmed', 'sucesso', 'concluido'].includes(status)) {
+                    if (['paid', 'approved', 'confirmed', 'sucesso', 'concluido', 'pago'].includes(status)) {
                         setIsPaid(true);
                     }
                 }
             }, (error) => {
-                console.error("Erro ao monitorar pagamento (Provável falta de permissão):", error);
+                console.error("Erro ao monitorar pagamento:", error);
             });
             unsubscribers.push(unsubscribePayment);
         }
@@ -112,21 +112,19 @@ function CheckoutContent() {
 
         findLeadAndMonitor();
 
-        // 3. Polling de Segurança (A cada 3 segundos - Mais agressivo no início)
+        // 3. Polling de Segurança (A cada 1.5 segundos - Instantâneo)
         const pollInterval = setInterval(async () => {
             if (isPaid || !activePixId) return;
             try {
-                // console.log("Polling de segurança ativo: Checando API...");
-                const debugParam = searchParams.get('debug');
-                const response = await axios.get(`/api/check-status?id=${activePixId}${debugParam ? `&debug=${debugParam}` : ''}`);
-                if (response.data.paid || response.data.status === 'approved' || response.data.status === 'paid') {
+                const response = await axios.get(`/api/check-status?id=${activePixId}`);
+                if (response.data.paid || ['approved', 'paid', 'pago', 'confirmed'].includes(response.data.status)) {
                     console.log("✅ Pagamento confirmado via Polling!");
                     setIsPaid(true);
                 }
             } catch (e) {
-                console.error("Erro no polling (tentando novamente...):", e);
+                // Silencioso para não poluir console
             }
-        }, 3000);
+        }, 1500);
 
         return () => {
             unsubscribers.forEach(unsub => unsub());
@@ -330,8 +328,8 @@ function CheckoutContent() {
                                     </div>
                                     <h3 className="text-lg md:text-xl font-black italic uppercase tracking-tighter text-white">{planName} ({getDaysDisplay(planName)})</h3>
 
-                                    <div className="mt-4 md:mt-6 flex items-baseline justify-center gap-1.5">
-                                        <span className="text-lg md:text-xl font-black text-primary italic">R$</span>
+                                    <div className="mt-4 md:mt-6 flex items-baseline justify-center gap-2">
+                                        <span className="text-3xl md:text-4xl font-black text-primary italic leading-none">R$</span>
                                         <span className="text-6xl md:text-7xl font-black text-white italic tracking-tighter leading-none">{planPrice}</span>
                                     </div>
                                     <div className="mt-3 md:mt-4 inline-flex items-center gap-2 px-3 py-1 md:px-4 md:py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
@@ -459,13 +457,13 @@ function CheckoutContent() {
 
                                             <div className="bg-white p-6 rounded-3xl inline-block shadow-2xl mb-6 group relative overflow-hidden border-4 border-primary/20">
                                                 <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                <div className="relative z-10">
+                                                <div className="relative z-10 p-2 bg-white rounded-2xl">
                                                     <img
                                                         src={pixImage.startsWith('data:') ? pixImage : `data:image/png;base64,${pixImage}`}
                                                         alt="QR Code Pix"
-                                                        className="w-56 h-56 object-contain"
+                                                        className="w-72 h-72 md:w-80 md:h-80 object-contain mx-auto"
                                                     />
-                                                    <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest mt-4">QRCode Pix Seguro</p>
+                                                    <p className="text-[10px] text-gray-800 font-black uppercase tracking-widest mt-4">Escaneie para Liberar Agora</p>
                                                 </div>
                                             </div>
 
