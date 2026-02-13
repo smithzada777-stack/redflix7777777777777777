@@ -211,6 +211,16 @@ export default function AdminDashboard() {
         return () => unsub();
     }, [lastManualPixId]);
 
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        setLoading(true);
+        const unsubscribe = onSnapshot(query(collection(db, "leads"), orderBy("createdAt", "desc")), (snapshot) => {
+            setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [isAuthenticated]);
+
     const metrics = useMemo(() => {
         const now = new Date();
         const startOfDay = new Date(new Date(now).setHours(0, 0, 0, 0));
