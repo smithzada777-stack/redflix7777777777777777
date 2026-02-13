@@ -78,6 +78,8 @@ export default function AdminDashboard() {
     const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('all');
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+    const [planFilter, setPlanFilter] = useState('all');
+    const [priceFilter, setPriceFilter] = useState('');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -235,8 +237,13 @@ export default function AdminDashboard() {
             else if (dateFilter === 'week') passDate = d >= startOfWeek;
             else if (dateFilter === 'month') passDate = d >= startOfMonth;
 
-            const passSearch = l.email.toLowerCase().includes(searchTerm.toLowerCase()) || l.phone.includes(searchTerm);
-            return passDate && passSearch;
+            const passSearch = l.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                l.phone.includes(searchTerm);
+
+            const passPlan = planFilter === 'all' || l.plan === planFilter;
+            const passPrice = !priceFilter || String(l.price).includes(priceFilter);
+
+            return passDate && passSearch && passPlan && passPrice;
         });
 
         const revToday = leads.filter(l => l.status === 'approved' && l.createdAt && l.createdAt.toDate() >= startOfDay).reduce((acc, curr) => acc + parsePrice(curr.price), 0);
@@ -255,7 +262,7 @@ export default function AdminDashboard() {
             bestPlan: best ? best[0] : 'N/A',
             expiring: leads.filter(l => l.status === 'approved').sort((a, b) => getDaysRemaining(a.createdAt, a.plan) - getDaysRemaining(b.createdAt, b.plan))
         };
-    }, [leads, searchTerm, dateFilter, rowsPerPage]);
+    }, [leads, searchTerm, dateFilter, rowsPerPage, planFilter, priceFilter]);
 
     const deleteLead = async (id: string) => {
         if (!confirm('Tem certeza que deseja excluir?')) return;
@@ -439,9 +446,38 @@ export default function AdminDashboard() {
                                             </button>
                                         )}
                                     </div>
-                                    <div className="relative w-full md:w-80">
-                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                        <input type="text" placeholder="BUSCAR POR EMAIL OU WHATSAPP..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[10px] font-black focus:border-red-600 outline-none transition-all placeholder:opacity-30" />
+                                    <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="relative">
+                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                                            <input
+                                                type="text"
+                                                placeholder="BUSCAR NOME/EMAIL..."
+                                                value={searchTerm}
+                                                onChange={e => setSearchTerm(e.target.value)}
+                                                className="w-full bg-black border border-white/10 rounded-xl py-3 pl-10 pr-4 text-[9px] font-black focus:border-red-600 outline-none transition-all placeholder:opacity-30 uppercase"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <select
+                                                value={planFilter}
+                                                onChange={e => setPlanFilter(e.target.value)}
+                                                className="bg-black border border-white/10 rounded-xl py-3 px-4 text-[9px] font-black text-gray-400 focus:border-red-600 outline-none transition-all uppercase"
+                                            >
+                                                <option value="all">TODOS PLANOS</option>
+                                                <option value="Mensal">MENSAL</option>
+                                                <option value="Trimestral">TRIMESTRAL</option>
+                                                <option value="Semestral">SEMESTRAL</option>
+                                                <option value="VIP">VIP</option>
+                                                <option value="Dash Pix">DASH PIX</option>
+                                            </select>
+                                            <input
+                                                type="text"
+                                                placeholder="VALOR (R$)..."
+                                                value={priceFilter}
+                                                onChange={e => setPriceFilter(e.target.value)}
+                                                className="bg-black border border-white/10 rounded-xl py-3 px-4 text-[9px] font-black focus:border-red-600 outline-none transition-all placeholder:opacity-30 uppercase"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
@@ -509,88 +545,129 @@ export default function AdminDashboard() {
                     )}
 
                     {activeTab === 'expiring' && (
-                        <div className="space-y-10">
+                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div>
                                 <h2 className="text-3xl font-black italic tracking-tighter uppercase underline decoration-red-600 decoration-4 underline-offset-8">Recuperação de <span className="text-red-600">Vendas</span></h2>
-                                <p className="text-xs text-gray-500 mt-4 max-w-2xl font-medium">Clientes com assinatura expirando. Envie propostas personalizadas para garantir a retenção.</p>
+                                <p className="text-xs text-gray-500 mt-6 max-w-2xl font-medium leading-relaxed">Listagem de clientes com assinatura próxima do vencimento. Utilize as ações para enviar propostas de renovação ou entrar em contato direto.</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {metrics.expiring.map(lead => {
-                                    const days = getDaysRemaining(lead.createdAt, lead.plan);
-                                    const isUrgent = days <= 5;
-                                    return (
-                                        <div key={lead.id} className={`bg-[#0a0a0a] p-8 rounded-3xl border-l-8 transition-all hover:scale-[1.02] ${isUrgent ? 'border-red-600' : 'border-green-600'} border-y border-r border-white/5 space-y-6`}>
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <div className="text-xs font-black text-white truncate max-w-[150px]">{lead.email}</div>
-                                                    <div className="text-[10px] text-gray-600 font-bold mt-1 uppercase tracking-widest">{lead.plan}</div>
-                                                </div>
-                                                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${isUrgent ? 'bg-red-600 text-white' : 'bg-green-600/10 text-green-500'}`}>{days} DIAS</div>
-                                            </div>
-                                            <div className="h-0.5 bg-white/5 w-full"></div>
-                                            <div className="flex gap-2">
-                                                <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="p-4 bg-green-600/10 hover:bg-green-600 text-green-500 hover:text-white rounded-2xl transition-all border border-green-600/20 group">
-                                                    <MessageCircle size={20} />
-                                                </a>
-                                                <button onClick={() => { setSelectedLead(lead); setDiscount(10); }} className="flex-1 bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-red-600 hover:text-white transition-all shadow-xl">
-                                                    <Smartphone size={18} />
-                                                    PROPOSTA
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Modal de Proposta Premium */}
-                            {selectedLead && (
-                                <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
-                                    <div className="bg-[#0f0f0f] border border-red-600/20 rounded-[2.5rem] p-10 max-w-2xl w-full shadow-[0_0_100px_rgba(220,38,38,0.1)] relative">
-                                        <button onClick={() => setSelectedLead(null)} className="absolute top-8 right-8 text-gray-500 hover:text-white transition-colors"><X size={32} /></button>
-
-                                        <div className="mb-10 text-center">
-                                            <div className="inline-block p-1 rounded-2xl bg-gradient-to-r from-red-600 to-transparent mb-6">
-                                                <div className="bg-[#0f0f0f] px-6 py-2 rounded-xl text-[10px] font-black text-red-500 uppercase tracking-[0.3em]">RENOVAÇÃO VIP</div>
-                                            </div>
-                                            <h3 className="text-3xl font-black italic tracking-tighter text-white">OFERTA PARA <span className="text-red-600 break-all">{selectedLead.email}</span></h3>
-                                        </div>
-
-                                        {/* Slider de Desconto Premium */}
-                                        <div className="bg-white/5 p-8 rounded-3xl border border-white/5 mb-8">
-                                            <div className="flex justify-between items-center mb-6">
-                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2"><Percent size={14} className="text-red-600" /> SELECIONAR DESCONTO</span>
-                                                <span className="text-3xl font-black text-red-600 italic tracking-tighter animate-pulse">{discount}% OFF</span>
-                                            </div>
-                                            <input type="range" min="5" max="50" step="5" value={discount} onChange={e => setDiscount(parseInt(e.target.value))} className="w-full h-3 bg-black rounded-full appearance-none cursor-pointer accent-red-600" />
-                                            <div className="flex justify-between text-[8px] font-black text-gray-700 mt-4 tracking-[0.2em]"><span>5% (PADRÃO)</span><span>25% (MÉDIO)</span><span>50% (MÁXIMO)</span></div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 gap-6">
-                                            {['monthly', 'trimestral', 'semestral'].map(t => {
-                                                const p = getProposal(t);
+                            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead className="bg-[#050505] text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 border-b border-white/5">
+                                            <tr>
+                                                <th className="px-8 py-5">Cliente</th>
+                                                <th className="px-8 py-5">Plano Atual</th>
+                                                <th className="px-8 py-5 text-center">Vencimento</th>
+                                                <th className="px-8 py-5 text-right">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {metrics.expiring.map(lead => {
+                                                const days = getDaysRemaining(lead.createdAt, lead.plan);
+                                                const isUrgent = days <= 5;
                                                 return (
-                                                    <div key={t} className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 flex flex-col md:flex-row gap-6 items-center group hover:bg-white/[0.04] transition-all">
-                                                        <div className="flex-1 space-y-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="p-2 bg-red-600/10 rounded-xl text-red-600"><Star size={18} /></span>
-                                                                <span className="text-xs font-black uppercase tracking-widest text-white">{t === 'monthly' ? 'Renovação Mensal' : t === 'trimestral' ? 'Upgrade Trimestral' : 'Fidelização Semestral'}</span>
+                                                    <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
+                                                        <td className="px-8 py-6">
+                                                            <div className="text-xs font-black text-white">{lead.email}</div>
+                                                            <div className="text-[10px] text-gray-600 font-bold mt-1 uppercase tracking-widest">{lead.phone}</div>
+                                                        </td>
+                                                        <td className="px-8 py-6">
+                                                            <span className="bg-white/5 border border-white/10 px-2 py-1 rounded text-[9px] font-black uppercase text-gray-400">{lead.plan}</span>
+                                                        </td>
+                                                        <td className="px-8 py-6 text-center">
+                                                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${isUrgent ? 'bg-red-600 text-white animate-pulse' : 'bg-green-600/10 text-green-500'}`}>
+                                                                <Clock size={10} /> {days} DIAS
                                                             </div>
-                                                            {/* Preview de Mensagem */}
-                                                            <div className="bg-black/50 p-4 rounded-xl border border-white/5 relative h-24 overflow-y-auto scrollbar-hide">
-                                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1 opacity-50"><Smartphone size={10} /> Prévia WhatsApp:</p>
-                                                                <p className="text-[10px] text-gray-300 leading-relaxed font-medium italic">"{p.creative}"</p>
+                                                        </td>
+                                                        <td className="px-8 py-6">
+                                                            <div className="flex justify-end gap-2">
+                                                                <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="p-2.5 bg-green-600/10 hover:bg-green-600 text-green-500 hover:text-white rounded-xl transition-all border border-green-600/20">
+                                                                    <MessageCircle size={16} />
+                                                                </a>
+                                                                <button onClick={() => { setSelectedLead(lead); setDiscount(10); }} className="px-4 py-2 bg-white text-black font-black rounded-xl text-[10px] uppercase hover:bg-red-600 hover:text-white transition-all">
+                                                                    GERAR PROPOSTA
+                                                                </button>
                                                             </div>
-                                                        </div>
-                                                        <div className="flex flex-col gap-2 w-full md:w-44">
-                                                            <a href={`https://wa.me/${selectedLead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(p.creative)}`} target="_blank" className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl text-center text-[10px] font-black flex items-center justify-center gap-2 shadow-lg shadow-green-600/20">
-                                                                <Smartphone size={14} /> WHATSAPP
-                                                            </a>
-                                                            <button onClick={() => { navigator.clipboard.writeText(p.link); alert('LInk Copiado!'); }} className="w-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white py-2 rounded-xl text-[9px] font-black transition-all">COPIAR LINK</button>
-                                                        </div>
-                                                    </div>
+                                                        </td>
+                                                    </tr>
                                                 );
                                             })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Modal de Proposta Profissional */}
+                            {selectedLead && (
+                                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 lg:p-10">
+                                    <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setSelectedLead(null)} />
+                                    <div className="bg-[#0f0f0f] border border-white/10 rounded-[2rem] w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-[0_0_100px_rgba(220,38,38,0.1)] relative z-10 scrollbar-hide">
+                                        <div className="sticky top-0 bg-[#0f0f0f]/80 backdrop-blur-md p-8 border-b border-white/5 flex justify-between items-center z-20">
+                                            <div>
+                                                <h3 className="text-2xl font-black italic tracking-tighter text-white uppercase">Oferta de <span className="text-red-600">Renovação</span></h3>
+                                                <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">Configurando proposta para: {selectedLead.email}</p>
+                                            </div>
+                                            <button onClick={() => setSelectedLead(null)} className="p-2 text-gray-500 hover:text-white transition-colors bg-white/5 rounded-xl"><X size={24} /></button>
+                                        </div>
+
+                                        <div className="p-8 space-y-8">
+                                            {/* Controle de Desconto */}
+                                            <div className="bg-white/5 p-6 rounded-2xl border border-white/5 flex flex-col md:flex-row gap-6 items-center justify-between">
+                                                <div className="space-y-1 text-center md:text-left">
+                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Margem de Desconto</span>
+                                                    <span className="text-3xl font-black text-red-600 italic tracking-tighter">{discount}% OFF</span>
+                                                </div>
+                                                <div className="flex-1 w-full max-w-md">
+                                                    <input type="range" min="5" max="50" step="5" value={discount} onChange={e => setDiscount(parseInt(e.target.value))} className="w-full h-2 bg-black rounded-full appearance-none cursor-pointer accent-red-600" />
+                                                    <div className="flex justify-between text-[7px] font-black text-gray-700 mt-3 tracking-widest uppercase"><span>5% (Mín)</span><span>25% (Sugerido)</span><span>50% (Limite)</span></div>
+                                                </div>
+                                            </div>
+
+                                            {/* Tabela de Opções */}
+                                            <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
+                                                <table className="w-full text-left">
+                                                    <thead className="bg-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 border-b border-white/5">
+                                                        <tr>
+                                                            <th className="px-6 py-4">Opção</th>
+                                                            <th className="px-6 py-4">Prévia da Mensagem</th>
+                                                            <th className="px-6 py-4 text-right">Ação</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-white/5">
+                                                        {['monthly', 'trimestral', 'semestral'].map(t => {
+                                                            const p = getProposal(t);
+                                                            return (
+                                                                <tr key={t} className="hover:bg-white/[0.01] transition-colors group">
+                                                                    <td className="px-6 py-6 min-w-[140px]">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <span className="p-2 bg-red-600/10 rounded-lg text-red-600"><Star size={14} /></span>
+                                                                            <span className="text-[10px] font-black uppercase tracking-widest text-white">{t === 'monthly' ? 'Mensal' : t === 'trimestral' ? 'Trimestral' : 'Semestral'}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-6 py-6">
+                                                                        <div className="bg-black/40 p-3 rounded-lg border border-white/5 max-w-md">
+                                                                            <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-2">"{p.creative}"</p>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-6 py-6">
+                                                                        <div className="flex justify-end gap-2">
+                                                                            <button onClick={() => { navigator.clipboard.writeText(p.link); alert('Link Copiado!'); }} className="p-2 text-gray-500 hover:text-white transition-colors"><Copy size={16} /></button>
+                                                                            <a
+                                                                                href={`https://wa.me/${selectedLead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(p.creative)}`}
+                                                                                target="_blank"
+                                                                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase flex items-center gap-2 shadow-lg shadow-green-600/20"
+                                                                            >
+                                                                                <Send size={12} /> ENVIAR
+                                                                            </a>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
