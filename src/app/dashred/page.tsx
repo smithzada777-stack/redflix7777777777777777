@@ -84,6 +84,7 @@ export default function AdminDashboard() {
 
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
     const [discount, setDiscount] = useState(10);
+    const [msgStyle, setMsgStyle] = useState<'aggressive' | 'informal' | 'formal' | 'fun' | 'funny' | 'scarcity' | 'short'>('fun');
 
     const [pixAmount, setPixAmount] = useState('');
     const [generatedPixString, setGeneratedPixString] = useState('');
@@ -190,17 +191,25 @@ export default function AdminDashboard() {
     };
 
     const getProposal = (type: string) => {
-        if (!selectedLead) return { text: '', link: '' };
+        if (!selectedLead) return { creative: '', link: '' };
         const base = type === 'monthly' ? 29.9 : type === 'trimestral' ? 79.9 : 149.9;
         const name = type === 'monthly' ? 'Mensal' : type === 'trimestral' ? 'Trimestral' : 'Semestral';
         const final = (base * (1 - discount / 100)).toFixed(2).replace('.', ',');
         const link = `${window.location.origin}/checkout/simple?plan=${encodeURIComponent(name)}&price=${final}&leadId=${selectedLead.id}`;
         const days = getDaysRemaining(selectedLead.createdAt, selectedLead.plan);
 
+        const templates = {
+            aggressive: `⚠️ ÚLTIMO AVISO: Seu acesso RedFlix será cortado em ${days} dias. Não perca seus filmes e séries favoritos. Garanti uma última chance com ${discount}% OFF: ${link}`,
+            informal: `E aí! Tudo beleza? Vi aqui que seu RedFlix tá pra vencer. Pra não ficar sem seus filmes, te descolei um cupom de ${discount}% de desconto aqui: ${link} TMJ! 🍿`,
+            formal: `Prezado(a), informamos que sua assinatura RedFlix expira em ${days} dias. Para manter seu acesso sem interrupções, disponibilizamos uma oferta de renovação com ${discount}% de desconto: ${link}`,
+            fun: `🎬 Luz, câmera... quase pausa! Seu RedFlix tá vencendo em ${days} dias, mas a maratona não pode parar! Pegue aqui ${discount}% OFF e dê o play na renovação: ${link} 🍿`,
+            funny: `Opa! Seus vizinhos já estão reclamando que você parou de assistir série? 😂 Seu RedFlix vence em ${days} dias! Resolve isso logo com ${discount}% de desconto e volta pro sofá: ${link}`,
+            scarcity: `🔥 SÓ HOJE: Sua conta RedFlix vence em ${days} dias e essa oferta de ${discount}% OFF expira em poucas horas. Garanta seu acesso agora: ${link}`,
+            short: `Sua RedFlix vence em ${days} dias. Renove agora com ${discount}% OFF aqui: ${link}`
+        };
+
         return {
-            direct: `Olá! Seu plano RedFlix vence em ${days} dias. Garanti um desconto de ${discount}% para sua renovação: ${link}`,
-            creative: `🎬 Opa! Sua pipoca está pronta, mas seu RedFlix está vencendo! Liberei ${discount}% OFF para você não parar a maratona: ${link}`,
-            aggressive: `⚠️ ATENÇÃO: Seu sinal RedFlix será cortado em ${days} dias. EVITE O BLOQUEIO agora com ${discount}% de desconto exclusivo: ${link}`,
+            creative: templates[msgStyle],
             link
         };
     };
@@ -612,15 +621,38 @@ export default function AdminDashboard() {
                                         </div>
 
                                         <div className="p-8 space-y-8">
-                                            {/* Controle de Desconto */}
-                                            <div className="bg-white/5 p-6 rounded-2xl border border-white/5 flex flex-col md:flex-row gap-6 items-center justify-between">
-                                                <div className="space-y-1 text-center md:text-left">
-                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Margem de Desconto</span>
-                                                    <span className="text-3xl font-black text-red-600 italic tracking-tighter">{discount}% OFF</span>
-                                                </div>
-                                                <div className="flex-1 w-full max-w-md">
+                                            {/* Controle de Desconto e Estilo */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="bg-white/5 p-6 rounded-2xl border border-white/5 space-y-4">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Margem de Desconto</span>
+                                                        <span className="text-2xl font-black text-red-600 italic tracking-tighter">{discount}% OFF</span>
+                                                    </div>
                                                     <input type="range" min="5" max="50" step="5" value={discount} onChange={e => setDiscount(parseInt(e.target.value))} className="w-full h-2 bg-black rounded-full appearance-none cursor-pointer accent-red-600" />
-                                                    <div className="flex justify-between text-[7px] font-black text-gray-700 mt-3 tracking-widest uppercase"><span>5% (Mín)</span><span>25% (Sugerido)</span><span>50% (Limite)</span></div>
+                                                    <div className="flex justify-between text-[7px] font-black text-gray-700 tracking-widest uppercase"><span>5%</span><span>25%</span><span>50%</span></div>
+                                                </div>
+
+                                                <div className="bg-white/5 p-6 rounded-2xl border border-white/5 space-y-4">
+                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Tom da Mensagem</span>
+                                                    <div className="grid grid-cols-4 gap-2">
+                                                        {[
+                                                            { id: 'aggressive', label: '🔥Braba' },
+                                                            { id: 'informal', label: '🤙Mano' },
+                                                            { id: 'formal', label: '👔Dr.' },
+                                                            { id: 'fun', label: '🎬Play' },
+                                                            { id: 'funny', label: '😂Zueira' },
+                                                            { id: 'scarcity', label: '⏳Corre' },
+                                                            { id: 'short', label: '⚡Papo' }
+                                                        ].map(s => (
+                                                            <button
+                                                                key={s.id}
+                                                                onClick={() => setMsgStyle(s.id as any)}
+                                                                className={`py-2 rounded-lg text-[8px] font-bold uppercase transition-all border ${msgStyle === s.id ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-black border-white/10 text-gray-500 hover:border-white/20'}`}
+                                                            >
+                                                                {s.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
 
