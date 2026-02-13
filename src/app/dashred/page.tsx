@@ -319,26 +319,44 @@ export default function AdminDashboard() {
 
     return (
         <div className="h-[100dvh] md:h-screen bg-[#020202] text-white font-sans flex overflow-hidden">
+            {/* Overlay para Mobile quando Sidebar aberta */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[65] md:hidden animate-in fade-in duration-300"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar Premium */}
-            <aside className={`fixed md:relative inset-y-0 left-0 z-[70] transition-all duration-300 bg-[#050505] border-r border-white/5 ${isSidebarOpen ? 'w-64' : 'w-20 md:w-20 lg:w-64'}`}>
-                <div className="p-6 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/40">
-                        <Star className="text-white" size={20} />
+            <aside className={`fixed md:relative inset-y-0 left-0 z-[70] transition-all duration-500 ease-in-out bg-[#050505] border-r border-white/5 
+                ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0 w-72 md:w-20 lg:w-72'}`}>
+
+                <div className="p-6 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/40">
+                            <Star className="text-white" size={20} />
+                        </div>
+                        <span className={`font-black italic text-xl tracking-tighter ${isSidebarOpen ? 'block' : 'hidden lg:block'}`}>REDFLIX</span>
                     </div>
-                    <span className={`font-black italic text-xl tracking-tighter ${isSidebarOpen ? 'block' : 'hidden lg:block'}`}>REDFLIX</span>
+                    {/* Botão fechar apenas mobile */}
+                    <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 text-gray-500 hover:text-white">
+                        <X size={24} />
+                    </button>
                 </div>
+
                 <nav className="mt-10 px-4 space-y-2">
                     {[
                         { id: 'overview', icon: TrendingUp, label: 'Dashboard' },
                         { id: 'expiring', icon: Clock, label: 'Renovações' },
                         { id: 'pix', icon: QrCode, label: 'Gerador Pix' }
                     ].map(item => (
-                        <button key={item.id} onClick={() => setActiveTab(item.id as any)} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === item.id ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
+                        <button key={item.id} onClick={() => { setActiveTab(item.id as any); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === item.id ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
                             <item.icon size={20} />
                             <span className={`text-xs font-black uppercase tracking-widest ${isSidebarOpen ? 'block' : 'hidden lg:block'}`}>{item.label}</span>
                         </button>
                     ))}
                 </nav>
+
                 <div className="absolute bottom-6 left-4 right-4">
                     <button onClick={handleLogout} className="w-full flex items-center gap-4 p-4 text-gray-500 hover:text-red-500 transition-colors">
                         <LogOut size={20} />
@@ -348,10 +366,10 @@ export default function AdminDashboard() {
             </aside>
 
             <main className="flex-1 overflow-y-auto relative pt-16 md:pt-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-red-900/5 via-transparent to-transparent">
-                {/* Mobile Header */}
-                <header className="md:hidden fixed top-0 w-full bg-black/80 backdrop-blur-lg p-4 flex justify-between items-center z-50 border-b border-white/5">
-                    <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2"><Menu size={24} /></button>
-                    <span className="font-black italic tracking-tighter">REDFLIX</span>
+                {/* Mobile Header (Fixed) */}
+                <header className="md:hidden fixed top-0 w-full bg-black/90 backdrop-blur-xl p-4 flex justify-between items-center z-50 border-b border-white/5">
+                    <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-white bg-white/5 rounded-lg active:scale-95 transition-transform"><Menu size={24} /></button>
+                    <span className="font-black italic tracking-tighter text-xl">REDFLIX</span>
                     <div className="w-10" />
                 </header>
 
