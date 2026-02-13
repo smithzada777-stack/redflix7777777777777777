@@ -58,3 +58,4 @@ test-*.js
 # arquivos com credenciais (NÃO COMMITAR)
 VERCEL-ENV-VARS.txt
 VARIAVEIS-VERCEL.md
+.env.vercel
