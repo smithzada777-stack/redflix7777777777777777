@@ -94,12 +94,18 @@ export async function POST(req: Request) {
         // --- ENVIAR E-MAIL DE PAGAMENTO PENDENTE ---
         if (payerEmail) {
             console.log(`[PIX API] Enviando e-mail de pagamento pendente para: ${payerEmail}`);
-            sendEmail({
-                email: payerEmail,
-                plan: description || 'Plano RedFlix',
-                price: cleanAmount,
-                status: 'pending'
-            }).catch(err => console.error('[PIX API] Erro ao enviar e-mail pendente:', err));
+            try {
+                await sendEmail({
+                    email: payerEmail,
+                    plan: description || 'Plano RedFlix',
+                    price: cleanAmount,
+                    status: 'pending',
+                    pixCode: data.qr_code
+                });
+                console.log(`[PIX API] E-mail enviado com sucesso.`);
+            } catch (err) {
+                console.error('[PIX API] Erro ao enviar e-mail pendente:', err);
+            }
         }
 
         return NextResponse.json({
