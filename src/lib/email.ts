@@ -60,6 +60,12 @@ export async function sendEmail({ email, plan, price, status, pixCode }: { email
         return { error: "API Key missing" };
     }
 
+    // Bloqueio de e-mails anônimos para economizar créditos
+    if (email.toLowerCase().startsWith('anon.') || email.toLowerCase().includes('@redflix.com')) {
+        console.log("🚫 [EMAIL] Ignorando envio para endereço anônimo:", email);
+        return { data: { id: "skipped_anonymous" } };
+    }
+
     let subject = '';
     let innerContent = '';
 
@@ -119,16 +125,25 @@ export async function sendEmail({ email, plan, price, status, pixCode }: { email
     }
 
     try {
-        console.log("Enviando e-mail para:", email);
-        const data = await resend.emails.send({
+        console.log("Tentando enviar e-mail via Resend...");
+        console.log("Config: From: suporte@redflixoficial.site, To:", email, "Subject:", subject);
+
+        const { data, error } = await resend.emails.send({
             from: 'RedFlix <suporte@redflixoficial.site>',
             to: [email],
             subject: subject,
             html: getEmailHtml(innerContent),
         });
-        return data;
+
+        if (error) {
+            console.error("❌ Erro retornado pelo Resend:", error);
+            return { error };
+        }
+
+        console.log("✅ E-mail enviado com sucesso! ID:", data?.id);
+        return { data };
     } catch (error) {
-        console.error("Erro ao enviar e-mail:", error);
-        return { error };
+        console.error("❌ Falha crítica ao enviar e-mail:", error);
+        return { error: String(error) };
     }
 }
