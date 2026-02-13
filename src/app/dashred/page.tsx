@@ -158,7 +158,7 @@ export default function AdminDashboard() {
         if (pixType === 'real' && (!realEmail || !realPhone)) return alert('Preencha os campos.');
         setPixLoading(true); setManualPixStatus('pending');
         try {
-            const res = await axios.post('/api/payment', { amount: pixAmount, description: 'Venda Dash', payerEmail: email });
+            const res = await axios.post('/api/payment', { amount: pixAmount, description: 'Venda Dash', payerEmail: email, origin: 'painel-admin' });
             if (res.data.qrcode_content) {
                 setGeneratedPixString(res.data.qrcode_content);
                 setGeneratedPixImage(res.data.qrcode_image_url);

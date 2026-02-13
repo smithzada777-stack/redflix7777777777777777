@@ -4,8 +4,8 @@ const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
 
 const Header = () => `
     <tr>
-        <td align="center" style="background: linear-gradient(180deg, #1a0202 0%, #000000 100%); padding: 40px 20px; border-bottom: 4px solid #E50914;">
-            <img src="https://i.imgur.com/6H5gxcw.png" alt="RedFlix" style="height: 60px; width: auto; display: block;" />
+        <td align="center" style="background: #000000; background: linear-gradient(180deg, #1a0202 0%, #000000 100%); padding: 45px 20px; border-bottom: 4px solid #E50914;">
+            <img src="https://i.imgur.com/6H5gxcw.png" alt="RedFlix" style="height: 55px; width: auto; display: block;" />
         </td>
     </tr>
 `;
@@ -19,33 +19,35 @@ export const getEmailHtml = (content: string) => `
     <title>RedFlix</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; font-family: 'Outfit', 'Helvetica Neue', Arial, sans-serif; background-color: #f6f6f6; color: #333333; }
+        body { margin: 0; padding: 0; width: 100% !important; font-family: 'Outfit', 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff; color: #333333; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #eeeeee; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .button {
             background-color: #E50914;
             color: #ffffff !important;
-            padding: 16px 32px;
+            padding: 18px 32px;
             border-radius: 8px;
             text-decoration: none;
             font-weight: 900;
             display: inline-block;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 6px rgba(229, 9, 20, 0.2);
+            letter-spacing: 0.5px;
+            margin: 20px 0;
+            font-size: 14px;
         }
     </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f6f6f6;">
     <center>
-        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" class="container" style="background-color: #ffffff;">
             ${Header()}
             <tr>
-                <td style="padding: 40px 30px; text-align: center; color: #333333;">
+                <td style="padding: 45px 35px; text-align: center; color: #333333;">
                     ${content}
                 </td>
             </tr>
             <tr>
-                <td align="center" style="padding: 30px; background-color: #eeeeee; color: #888888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; border-top: 1px solid #e0e0e0;">
-                    <p style="margin: 0;">RedFlix © 2026 • Todos os direitos reservados</p>
+                <td align="center" style="padding: 25px; background-color: #fafafa; color: #999999; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; border-top: 1px solid #eeeeee;">
+                    <p style="margin: 0;">RedFlix © 2026 • Premium Experience</p>
                 </td>
             </tr>
         </table>
@@ -54,93 +56,75 @@ export const getEmailHtml = (content: string) => `
 </html>
 `;
 
-export async function sendEmail({ email, plan, price, status, pixCode }: { email: string, plan: string, price: string, status: string, pixCode?: string }) {
-    if (!process.env.RESEND_API_KEY) {
-        console.error("API Key missing");
-        return { error: "API Key missing" };
-    }
+export async function sendEmail({ email, plan, price, status, pixCode, origin = 'RedFlix' }: { email: string, plan: string, price: string, status: string, pixCode?: string, origin?: string }) {
+    if (!process.env.RESEND_API_KEY) return { error: "API Key missing" };
 
-    // Bloqueio de e-mails anônimos para economizar créditos
     if (email.toLowerCase().startsWith('anon.') || email.toLowerCase().includes('@redflix.com')) {
-        console.log("🚫 [EMAIL] Ignorando envio para endereço anônimo:", email);
         return { data: { id: "skipped_anonymous" } };
     }
 
     let subject = '';
     let innerContent = '';
+    const supportPhone = '5571991644164';
+    const cleanOrigin = origin === 'painel-admin' ? 'RedFlix' : origin;
 
     if (status === 'approved') {
-        subject = 'Seu acesso ao RedFlix está disponível';
+        subject = '✅ Seu acesso ao RedFlix está disponível';
+        const waMsgApproved = encodeURIComponent(`Oi, acabei de assinar meu plano na RedFlix e ainda não recebi meu acesso, poderia me ajudar?`);
+
         innerContent = `
-            <h2 style="font-size: 26px; font-weight: 900; margin: 0 0 10px 0; color: #111111;">Acesso Liberado</h2>
-            <p style="font-size: 16px; line-height: 1.6; margin: 0 0 30px 0; color: #555555;">
-                Olá, seu plano <strong>${plan}</strong> já está ativo no nosso sistema.
+            <div style="font-size: 40px; margin-bottom: 10px;">✅</div>
+            <h2 style="font-size: 26px; font-weight: 900; margin: 0 0 10px 0; color: #111111; letter-spacing: -1px;">ACESSO LIBERADO!</h2>
+            <p style="font-size: 16px; line-height: 1.6; margin: 0 10%; color: #666666;">
+                Sua assinatura já está ativa no sistema. Siga os passos para começar a assistir agora.
             </p>
             
-            <div style="background-color: #f9f9f9; border: 1px solid #eeeeee; border-radius: 8px; padding: 25px; text-align: left; margin-bottom: 30px;">
-                 <p style="color: #E50914; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 15px 0;">PRÓXIMOS PASSOS</p>
-                <div style="margin-bottom: 12px; font-size: 14px; color: #333333;">
-                    <strong style="color: #22c55e;">PASSO 1:</strong> Aguarde nosso contato via WhatsApp.
-                </div>
-                <div style="margin-bottom: 12px; font-size: 14px; color: #333333;">
-                    <strong style="color: #22c55e;">PASSO 2:</strong> Receba seu login e senha exclusivos.
-                </div>
-                <div style="font-size: 14px; color: #333333;">
-                    <strong style="color: #22c55e;">PASSO 3:</strong> Assista em 4K na sua TV, Celular ou PC.
-                </div>
+            <div style="background-color: #f9f9f9; border: 1px solid #eeeeee; border-radius: 12px; padding: 25px; text-align: left; margin: 30px 0;">
+                <p style="color: #E50914; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 15px 0;">PRÓXIMOS PASSOS</p>
+                <div style="margin-bottom: 10px; font-size: 14px; color: #333;"><strong>1.</strong> Clique no botão de suporte abaixo para resgatar seu login.</div>
+                <div style="margin-bottom: 10px; font-size: 14px; color: #333;"><strong>2.</strong> Nossa equipe enviará suas credenciais exclusivas.</div>
+                <div style="font-size: 14px; color: #333;"><strong>3.</strong> Aproveite todo o conteúdo em 4K.</div>
             </div>
 
-            <a href="https://wa.me/5571991644164" class="button">
-                Falar com Suporte
+            <a href="https://wa.me/${supportPhone}?text=${waMsgApproved}" class="button">
+                RESGATAR MEU ACESSO
             </a>
         `;
     } else {
-        subject = 'Detalhes do seu pedido na RedFlix';
+        subject = '⏳ Pedido Pendente - RedFlix';
+        // Formantando o preço para ficar bonito na mensagem do WA
+        const cleanPrice = price.toString().replace('.', ',');
+        const waMsgPending = encodeURIComponent(`Olá, acabei de gerar o pedido da assinatura de R$ ${cleanPrice} na RedFlix e tenho dúvidas, poderia me ajudar?`);
+
         innerContent = `
-            <h2 style="font-size: 26px; font-weight: 900; margin: 0 0 10px 0; color: #111111;">Confirmação de Pedido</h2>
-            <p style="font-size: 16px; line-height: 1.6; margin: 0 0 30px 0; color: #555555;">
-                Estamos aguardando a confirmação do seu plano <strong>${plan}</strong>.
+            <div style="font-size: 40px; margin-bottom: 10px;">⏳</div>
+            <h2 style="font-size: 26px; font-weight: 900; margin: 0 0 10px 0; color: #111111; letter-spacing: -1px;">PEDIDO PENDENTE</h2>
+            <p style="font-size: 16px; line-height: 1.6; margin: 0 10%; color: #666666;">
+                Recebemos sua solicitação para a assinatura de <strong>R$ ${cleanPrice}</strong>.
             </p>
 
-            <div style="background-color: #f9f9f9; border: 1px solid #eeeeee; border-radius: 8px; padding: 25px; margin-bottom: 30px;">
-                <p style="color: #888888; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 5px 0;">TOTAL A PAGAR</p>
-                <p style="color: #E50914; font-size: 42px; font-weight: 900; margin: 0 0 20px 0; letter-spacing: -1px;">R$ ${price}</p>
-                
-                ${pixCode ? `
-                <div style="background-color: #ffffff; padding: 15px; border-radius: 6px; border: 1px solid #dddddd; text-align: left;">
-                    <p style="margin: 0 0 8px 0; color: #555555; font-size: 11px; text-transform: uppercase; font-weight: bold;">Copia e Cola Pix:</p>
-                    <code style="display: block; font-family: monospace; color: #22c55e; word-break: break-all; font-size: 12px; background: #f0f0f0; padding: 10px; border-radius: 4px; border: 1px dashed #cccccc;">${pixCode}</code>
-                </div>
-                <p style="font-size: 12px; color: #777777; margin-top: 10px;">Copie o código acima e cole no seu app bancário.</p>
-                ` : ''}
+            <div style="background-color: #f9f9f9; border: 1px solid #eeeeee; border-radius: 12px; padding: 25px; margin: 30px 0;">
+                <p style="color: #999999; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 5px 0;">VALOR DA ASSINATURA</p>
+                <p style="color: #E50914; font-size: 38px; font-weight: 900; margin: 0; letter-spacing: -1px;">R$ ${cleanPrice}</p>
             </div>
 
-            <p style="color: #666666; font-size: 13px; margin: 0;">
-                Dúvidas? <a href="https://wa.me/5571991644164" style="color: #E50914; text-decoration: underline;">Chame no WhatsApp</a>
-            </p>
+            <p style="font-size: 14px; color: #777; margin-bottom: 10px;">Caso tenha qualquer dúvida sobre o pagamento ou queira acelerar o processo:</p>
+            <a href="https://wa.me/${supportPhone}?text=${waMsgPending}" class="button">
+                FALAR COM SUPORTE
+            </a>
         `;
     }
 
     try {
-        console.log("Tentando enviar e-mail via Resend...");
-        console.log("Config: From: suporte@redflixoficial.site, To:", email, "Subject:", subject);
-
         const { data, error } = await resend.emails.send({
             from: 'RedFlix <suporte@redflixoficial.site>',
             to: [email],
             subject: subject,
             html: getEmailHtml(innerContent),
         });
-
-        if (error) {
-            console.error("❌ Erro retornado pelo Resend:", error);
-            return { error };
-        }
-
-        console.log("✅ E-mail enviado com sucesso! ID:", data?.id);
+        if (error) return { error };
         return { data };
     } catch (error) {
-        console.error("❌ Falha crítica ao enviar e-mail:", error);
         return { error: String(error) };
     }
 }
