@@ -93,16 +93,51 @@ export default function AdminDashboard() {
     const [generatedPixImage, setGeneratedPixImage] = useState('');
     const [pixLoading, setPixLoading] = useState(false);
 
+    // State for Pix Monitoring
+    const [lastManualPixId, setLastManualPixId] = useState<string | null>(null);
+    const [manualPixStatus, setManualPixStatus] = useState<'pending' | 'approved' | 'none'>('none');
+    const [pixType, setPixType] = useState<'anon' | 'real'>('anon');
+    const [realEmail, setRealEmail] = useState('');
+    const [realPhone, setRealPhone] = useState('');
+
+    // Listener for manual Pix status
+    useEffect(() => {
+        if (!lastManualPixId) return;
+
+        const unsub = onSnapshot(doc(db, "leads", lastManualPixId), (snap) => {
+            if (snap.exists() && snap.data().status === 'approved') {
+                setManualPixStatus('approved');
+            }
+        });
+
+        return () => unsub();
+    }, [lastManualPixId]);
+
     // Generate Pix Handler
     const handleGeneratePixCode = async () => {
         if (!pixAmount) return alert('Preencha o valor da cobrança.');
+
+        let targetEmail = 'anon.venda@redflix.com';
+        let targetPhone = '11999999999';
+
+        if (pixType === 'real') {
+            if (!realEmail || !realPhone) return alert('Preencha Email e Celular para Pix Real.');
+            targetEmail = realEmail;
+            targetPhone = realPhone;
+        } else {
+            // Randomly Generate for Anon
+            const randomId = Math.floor(1000 + Math.random() * 9000);
+            targetEmail = `cliente.${randomId}@anon.com`;
+        }
+
         setPixLoading(true);
+        setManualPixStatus('pending');
 
         try {
             const response = await axios.post('/api/payment', {
                 amount: pixAmount,
-                description: `Cobranca Manual - Dash`,
-                payerEmail: 'venda.manual@dash.com', // Identificador de venda manual
+                description: `Venda Dash - ${pixType === 'anon' ? 'Anônimo' : 'Real'}`,
+                payerEmail: targetEmail,
             });
 
             const { qrcode_content, qrcode_image_url, transaction_id } = response.data;
@@ -111,24 +146,30 @@ export default function AdminDashboard() {
                 setGeneratedPixString(qrcode_content);
                 setGeneratedPixImage(qrcode_image_url);
 
-                // --- NOVO: Criar Lead para rastreio ---
-                const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
-                await addDoc(collection(db, "leads"), {
-                    email: 'venda.manual@dash.com',
-                    phone: '00000000000',
-                    plan: 'Venda Manual',
+                // Create Lead for tracking with the transactionId
+                const { addDoc, collection, serverTimestamp, setDoc } = await import('firebase/firestore');
+
+                // Use transaction_id as the document ID for easier monitoring
+                const leadRef = doc(collection(db, "leads"), transaction_id);
+                await setDoc(leadRef, {
+                    email: targetEmail,
+                    phone: targetPhone,
+                    plan: `Dash ${pixType === 'anon' ? 'Anon' : 'Real'}`,
                     price: pixAmount,
                     status: 'pending',
-                    transactionId: transaction_id, // Link com o pagamento
+                    transactionId: transaction_id,
                     createdAt: serverTimestamp()
                 });
+
+                setLastManualPixId(transaction_id);
 
             } else {
                 throw new Error('PushinPay não retornou dados.');
             }
         } catch (error: any) {
             console.error("Erro dashboard pix:", error);
-            alert(error.response?.data?.error || 'Erro ao gerar Pix via PushinPay.');
+            alert(error.response?.data?.error || 'Erro ao gerar Pix.');
+            setManualPixStatus('none');
         } finally {
             setPixLoading(false);
         }
@@ -938,6 +979,46 @@ export default function AdminDashboard() {
                         <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-6">
+                                    <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5">
+                                        <button
+                                            onClick={() => setPixType('anon')}
+                                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${pixType === 'anon' ? 'bg-primary text-white' : 'text-gray-500 hover:text-white'}`}
+                                        >
+                                            Anônimo
+                                        </button>
+                                        <button
+                                            onClick={() => setPixType('real')}
+                                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${pixType === 'real' ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}
+                                        >
+                                            Dados Reais
+                                        </button>
+                                    </div>
+
+                                    {pixType === 'real' && (
+                                        <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <div>
+                                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">Email do Cliente</label>
+                                                <input
+                                                    type="email"
+                                                    placeholder="cliente@email.com"
+                                                    value={realEmail}
+                                                    onChange={(e) => setRealEmail(e.target.value)}
+                                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">WhatsApp (com DDD)</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="71999999999"
+                                                    value={realPhone}
+                                                    onChange={(e) => setRealPhone(e.target.value)}
+                                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div>
                                         <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2 block">Valor da Cobrança (R$)</label>
                                         <input
@@ -958,7 +1039,7 @@ export default function AdminDashboard() {
                                         {pixLoading ? <Loader2 className="animate-spin" size={18} /> : (
                                             <>
                                                 <QrCode size={18} />
-                                                GERAR COBRANÇA PUSHINPAY
+                                                GERAR PIX {pixType === 'anon' ? 'ANÔNIMO' : 'REAL'}
                                             </>
                                         )}
                                     </button>
@@ -967,31 +1048,59 @@ export default function AdminDashboard() {
                                 <div className="flex flex-col items-center justify-center bg-white/5 rounded-2xl p-6 border border-white/5 relative">
                                     {generatedPixString ? (
                                         <>
-                                            <div className="bg-white p-4 rounded-xl mb-6 border-4 border-primary/20">
-                                                <img
-                                                    src={generatedPixImage.startsWith('data:') ? generatedPixImage : `data:image/png;base64,${generatedPixImage}`}
-                                                    alt="QR Code Pix"
-                                                    className="w-48 h-48 object-contain"
-                                                />
-                                            </div>
-                                            <div className="w-full relative">
-                                                <input
-                                                    readOnly
-                                                    value={generatedPixString}
-                                                    className="w-full bg-black/50 border border-white/10 rounded-lg pl-3 pr-10 py-2 text-[10px] text-gray-400 font-mono truncate focus:outline-none"
-                                                />
-                                                <button
-                                                    onClick={() => navigator.clipboard.writeText(generatedPixString)}
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors"
-                                                    title="Copiar"
-                                                >
-                                                    <Copy size={16} />
-                                                </button>
-                                            </div>
-                                            <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest mt-4 animate-pulse">
-                                                <CheckCircle2 size={12} className="inline mr-1" />
-                                                Pronto para envio
-                                            </p>
+                                            {manualPixStatus === 'approved' ? (
+                                                <div className="text-center animate-in zoom-in duration-500">
+                                                    <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(34,197,94,0.4)]">
+                                                        <CheckCircle2 size={48} className="text-white" />
+                                                    </div>
+                                                    <h3 className="text-xl font-black italic text-white uppercase tracking-tighter">Pagamento Aprovado!</h3>
+                                                    <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest mt-2">Venda registrada com sucesso</p>
+                                                    <button
+                                                        onClick={() => {
+                                                            setGeneratedPixString('');
+                                                            setManualPixStatus('none');
+                                                        }}
+                                                        className="mt-6 text-[10px] text-gray-500 hover:text-white underline decoration-primary font-bold uppercase tracking-widest"
+                                                    >
+                                                        Gerar Nova Cobrança
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="bg-white p-4 rounded-xl mb-6 border-4 border-primary/20 relative group">
+                                                        <img
+                                                            src={generatedPixImage.startsWith('data:') ? generatedPixImage : `data:image/png;base64,${generatedPixImage}`}
+                                                            alt="QR Code Pix"
+                                                            className="w-64 h-64 object-contain"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+                                                            <p className="text-white text-[10px] font-black uppercase tracking-widest">Aguardando Pagamento...</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-full relative">
+                                                        <input
+                                                            readOnly
+                                                            value={generatedPixString}
+                                                            className="w-full bg-black/50 border border-white/10 rounded-lg pl-3 pr-10 py-2 text-[10px] text-gray-400 font-mono truncate focus:outline-none"
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(generatedPixString);
+                                                                alert('Pix Copiado!');
+                                                            }}
+                                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors"
+                                                        >
+                                                            <Copy size={16} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-4">
+                                                        <Loader2 size={12} className="text-primary animate-spin" />
+                                                        <p className="text-[10px] text-primary font-bold uppercase tracking-widest animate-pulse">
+                                                            Monitorando Aprovação...
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            )}
                                         </>
                                     ) : (
                                         <div className="text-center opacity-30">
