@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, orderBy, onSnapshot, Timestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import {
     Users, Phone, Mail, Clock, Shield, Search, LogOut, CheckCircle2,
-    AlertCircle, DollarSign, TrendingUp, BarChart3,
+    AlertCircle, DollarSign, TrendingUp, BarChart3, Star,
     MoreVertical, FileText, Trash2, Smartphone, Send, Calendar, Percent, QrCode, Copy, Loader2, Menu, X
 } from 'lucide-react';
 import axios from 'axios';
