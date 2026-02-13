@@ -70,12 +70,11 @@ export async function sendEmail({ email, plan, price, status, pixCode }: { email
     let innerContent = '';
 
     if (status === 'approved') {
-        subject = '🚀 ACESSO LIBERADO - RedFlix VIP';
+        subject = 'Seu acesso ao RedFlix está disponível';
         innerContent = `
-            <div style="font-size: 48px; margin-bottom: 20px;">✅</div>
-            <h2 style="font-size: 26px; font-weight: 900; margin: 0 0 10px 0; color: #111111; text-transform: uppercase;">Pagamento Aprovado!</h2>
+            <h2 style="font-size: 26px; font-weight: 900; margin: 0 0 10px 0; color: #111111;">Acesso Liberado</h2>
             <p style="font-size: 16px; line-height: 1.6; margin: 0 0 30px 0; color: #555555;">
-                Seu plano <strong>${plan}</strong> foi ativado com sucesso.
+                Olá, seu plano <strong>${plan}</strong> já está ativo no nosso sistema.
             </p>
             
             <div style="background-color: #f9f9f9; border: 1px solid #eeeeee; border-radius: 8px; padding: 25px; text-align: left; margin-bottom: 30px;">
@@ -96,13 +95,11 @@ export async function sendEmail({ email, plan, price, status, pixCode }: { email
             </a>
         `;
     } else {
-        subject = '⏳ FINALIZAR PAGAMENTO - RedFlix';
+        subject = 'Detalhes do seu pedido na RedFlix';
         innerContent = `
-            <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
-            
-            <h2 style="font-size: 26px; font-weight: 900; margin: 0 0 10px 0; color: #111111; text-transform: uppercase;">Quase lá...</h2>
+            <h2 style="font-size: 26px; font-weight: 900; margin: 0 0 10px 0; color: #111111;">Confirmação de Pedido</h2>
             <p style="font-size: 16px; line-height: 1.6; margin: 0 0 30px 0; color: #555555;">
-                Recebemos seu pedido do plano <strong>${plan}</strong>. Finalize agora.
+                Estamos aguardando a confirmação do seu plano <strong>${plan}</strong>.
             </p>
 
             <div style="background-color: #f9f9f9; border: 1px solid #eeeeee; border-radius: 8px; padding: 25px; margin-bottom: 30px;">
