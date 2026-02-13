@@ -326,8 +326,6 @@ export default function AdminDashboard() {
             pending: totalPending,
             leads: totalLeads,
             conversion: activeConversion,
-            weeklyData,
-            maxSales,
             bestPlan: bestSellingPlan ? bestSellingPlan[0] : 'N/A',
             bestPlanCount: bestSellingPlan ? bestSellingPlan[1] : 0
         };
@@ -444,17 +442,27 @@ export default function AdminDashboard() {
         let discountText = discount > 0 ? ` com *${discount}% de DESCONTO* 🔥` : '';
 
         if (type === 'renew') {
-            msg = `Olá! Tudo bem? 😃\n\nNós da *RedFlix* vimos que seu acesso *${selectedLead.plan}* está próximo do vencimento (faltam *${daysLeft} dias*). 📅\n\nPara agradecer sua fidelidade, liberei uma condição especial para você renovar hoje${discountText} e não perder seus canais, filmes e séries favoritos! 🎬\n\n👇 *Acesse seu link exclusivo de renovação:*\n${link}\n\nQualquer dúvida, estou à disposição! 🤝`;
+            const variations = {
+                direct: `Olá! Seu acesso *${selectedLead.plan}* vence em *${daysLeft} dias*. 📅\n\nRenove agora para não perder o sinal!${discountText}\n\n👇 *Link de Renovação:*\n${link}`,
+                creative: `Opa! Tudo certo? 😃\n\nA sua diversão está em risco! Faltam apenas *${daysLeft} dias* para seu plano vencer. 🎬\n\nLiberei uma oferta especial pra você continuar com a gente${discountText}. Não fica sem sua RedFlix!\n\n👇 *Renovar agora com desconto:*\n${link}`,
+                aggressive: `🔴 *AVISO IMPORTANTE - REDFLIX*\n\nSeu plano vence em *${daysLeft} dias* e seu sinal entrará em corte automático. ⚡\n\nConsegui uma ÚLTIMA VAGA de renovação com desconto máximo para você${discountText}. Aproveite agora ou perderá o preço promocional!\n\n👇 *GARANTIR MINHA VAGA:*\n${link}`
+            };
+            return variations;
         } else if (type === 'upgrade3') {
-            msg = `Olá! Tenho uma novidade VIP pra você! 🚀\n\nVi que você gosta do nosso serviço e decidi te liberar um upgrade pro *Plano Trimestral* (90 dias de acesso)${discountText}.\n\nAlém de economizar bastante, você fica livre de mensalidades por 3 meses inteiros e garante estabilidade total no seu sinal! 😉\n\n👇 *Aproveitar Upgrade Trimestral:*\n${link}\n\nBora subir de nível? 💎`;
-        } else if (type === 'upgrade6') {
-            msg = `E aí! Tudo certo? 😎\n\nLiberei aqui no sistema a nossa melhor oferta de fidelidade exclusiva para clientes ativos!\n\nO *Plano Semestral* (180 dias)${discountText}. É a sua chance de garantir o RedFlix pelo melhor preço do mercado e esquecer boletos até o meio do ano! 💸\n\n👇 *Garantir Plano Semestral (Vaga Única):*\n${link}\n\nEssa oferta expira em breve, aproveite! 🔥`;
+            const variations = {
+                direct: `Olá! Tenho um upgrade exclusivo pro *Plano Trimestral* (90 dias)${discountText}.\n\nEconomize mais e esqueça as faturas mensais!\n\n👇 *Ativar Plano Trimestral:*\n${link}`,
+                creative: `Ei! Você já é VIP na RedFlix! 🚀\n\nQue tal garantir 3 meses de acesso total com um desconto bruto que liberei aqui?${discountText}\n\nÉ a melhor forma de economizar e ter sinal garantido.\n\n👇 *Quero o Desconto Trimestral:*\n${link}`,
+                aggressive: `🔥 *OFERTA RELÂMPAGO UPGRADE*\n\nLiberei para os 5 primeiros clientes um upgrade pro *Plano Trimestral* com preço de custo!${discountText}\n\nÉ sua chance de garantir o RedFlix pela metade do preço normal. Clique abaixo antes que a vaga expire!\n\n👇 *PEGAR MINHA VAGA (90 DIAS):*\n${link}`
+            };
+            return variations;
+        } else {
+            const variations = {
+                direct: `Opa! Condição especial para o *Plano Semestral* (180 dias) liberada!${discountText}\n\nIdeal para quem busca o melhor custo-benefício.\n\n👇 *Assinar 6 Meses:*\n${link}`,
+                creative: `Tudo bem? 😎\n\nJá pensou em ficar 6 meses inteiros sem se preocupar com pagamento? Liberei o *Plano Semestral* com uma economia gigante pra você${discountText}.\n\nÉ o nosso plano mais cobiçado!\n\n👇 *Garantir 6 Meses de RedFlix:*\n${link}`,
+                aggressive: `💎 *VANTAGEM EXCLUSIVA CLIENTE VIP*\n\nComo você já está com a gente, o sistema liberou um cupom de 50% para o nosso melhor plano: *O SEMESTRAL*!${discountText}\n\nSão 180 dias de RedFlix por um preço ridículo. Não deixe essa passar!\n\n👇 *APROVEITAR 50% NO SEMESTRAL:*\n${link}`
+            };
+            return variations;
         }
-
-        return {
-            waLink: `https://wa.me/${selectedLead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`,
-            checkoutLink: link
-        };
     };
 
     // --- Loading / Login UI ---
@@ -631,488 +639,471 @@ export default function AdminDashboard() {
                             </div>
                         </div>
 
-                        {/* Chart and Best Plan */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            {/* Weekly Sales Chart */}
-                            <div className="lg:col-span-2 bg-[#0a0a0a] p-6 rounded-2xl border border-white/5">
-                                <div className="flex justify-between items-center mb-8">
-                                    <h3 className="text-xs font-black uppercase tracking-widest text-white italic">Vendas nos últimos 7 dias</h3>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-primary" />
-                                        <span className="text-[9px] text-gray-500 font-bold uppercase">Volume de Vendas</span>
-                                    </div>
-                                </div>
-                                <div className="h-48 w-full flex items-end justify-between gap-2 px-2">
-                                    {metrics.weeklyData.map((d, i) => (
-                                        <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
-                                            <div className="relative w-full flex justify-center items-end h-full">
-                                                <div
-                                                    className="w-full max-w-[30px] bg-white/5 border-t border-x border-white/10 rounded-t-lg group-hover:bg-primary/20 group-hover:border-primary/30 transition-all duration-500 relative"
-                                                    style={{ height: `${(d.count / metrics.maxSales) * 100}%`, minHeight: '4px' }}
-                                                >
-                                                    {d.count > 0 && (
-                                                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-black text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            {d.count}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <span className="text-[8px] font-black uppercase text-gray-600 group-hover:text-white transition-colors">
-                                                {d.day}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                    </div>
 
-                            {/* Best Plan Card Upgrade */}
-                            <div className="bg-gradient-to-br from-primary/20 to-black p-8 rounded-2xl border-2 border-primary/20 flex flex-col justify-center items-center text-center relative overflow-hidden group">
-                                <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 blur-[50px] rounded-full group-hover:bg-primary/40 transition-all" />
-                                <Star className="text-primary mb-4 animate-bounce" size={32} />
-                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-2">Plano Campeão</h3>
-                                <p className="text-2xl font-black text-white italic uppercase tracking-tighter leading-tight">{metrics.bestPlan}</p>
-                                <div className="mt-6 py-2 px-6 bg-primary text-white rounded-full text-[10px] font-black tracking-widest">
-                                    {metrics.bestPlanCount} VENDAS TOTAIS
-                                </div>
-                            </div>
+                        {/* Best Plan Card Upgrade */}
+                <div className="bg-gradient-to-br from-primary/20 to-black p-8 rounded-2xl border-2 border-primary/20 flex flex-col justify-center items-center text-center relative overflow-hidden group">
+                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 blur-[50px] rounded-full group-hover:bg-primary/40 transition-all" />
+                    <Star className="text-primary mb-4 animate-bounce" size={32} />
+                    <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-2">Plano Campeão</h3>
+                    <p className="text-2xl font-black text-white italic uppercase tracking-tighter leading-tight">{metrics.bestPlan}</p>
+                    <div className="mt-6 py-2 px-6 bg-primary text-white rounded-full text-[10px] font-black tracking-widest">
+                        {metrics.bestPlanCount} VENDAS TOTAIS
+                    </div>
+                </div>
+
+                {/* Search & Main Table */}
+                <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="p-4 md:p-6 border-b border-white/5 flex flex-col md:flex-row gap-4 justify-between items-center bg-white/[0.01]">
+                        <div className="flex items-center gap-4">
+                            <h3 className="text-lg font-bold text-white">Últimas Transações</h3>
+                            {selectedLeads.length > 0 && (
+                                <button
+                                    onClick={deleteSelectedLeads}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest border border-red-500/20"
+                                >
+                                    <Trash2 size={12} />
+                                    Apagar Selecionados ({selectedLeads.length})
+                                </button>
+                            )}
                         </div>
-
-                        {/* Search & Main Table */}
-                        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
-                            <div className="p-4 md:p-6 border-b border-white/5 flex flex-col md:flex-row gap-4 justify-between items-center bg-white/[0.01]">
-                                <div className="flex items-center gap-4">
-                                    <h3 className="text-lg font-bold text-white">Últimas Transações</h3>
-                                    {selectedLeads.length > 0 && (
-                                        <button
-                                            onClick={deleteSelectedLeads}
-                                            className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest border border-red-500/20"
-                                        >
-                                            <Trash2 size={12} />
-                                            Apagar Selecionados ({selectedLeads.length})
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-4 w-full md:w-auto">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-gray-500 font-bold uppercase">Linhas:</span>
-                                        <select
-                                            value={rowsPerPage}
-                                            onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                                            className="bg-white/5 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-white focus:outline-none focus:border-primary/50"
-                                        >
-                                            {[5, 10, 20, 50].map(v => (
-                                                <option key={v} value={v} className="bg-[#0f0f0f]">{v}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="relative w-full md:w-64">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                        <input
-                                            type="text"
-                                            placeholder="Buscar lead..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-primary/50"
-                                        />
-                                    </div>
-                                </div>
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-gray-500 font-bold uppercase">Linhas:</span>
+                                <select
+                                    value={rowsPerPage}
+                                    onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                                    className="bg-white/5 border border-white/10 rounded-lg py-1 px-2 text-[10px] text-white focus:outline-none focus:border-primary/50"
+                                >
+                                    {[5, 10, 20, 50].map(v => (
+                                        <option key={v} value={v} className="bg-[#0f0f0f]">{v}</option>
+                                    ))}
+                                </select>
                             </div>
-
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead className="bg-white/[0.02] border-b border-white/5">
-                                        <tr>
-                                            <th className="px-6 py-4 w-10">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedLeads.length === metrics.data.length && metrics.data.length > 0}
-                                                    onChange={toggleSelectAll}
-                                                    className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary"
-                                                />
-                                            </th>
-                                            <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500">#</th>
-                                            {['Cliente', 'Plano', 'Valor', 'Data/Hora', 'Status', 'Ações'].map(h => (
-                                                <th key={h} className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500">{h}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {metrics.data.length === 0 ? (
-                                            <tr><td colSpan={8} className="text-center py-12 text-gray-500 text-xs">Nenhum registro encontrado.</td></tr>
-                                        ) : (
-                                            metrics.data.map((lead, index) => (
-                                                <tr key={lead.id} className={`hover:bg-white/[0.02] transition-colors ${selectedLeads.includes(lead.id) ? 'bg-primary/5' : ''}`}>
-                                                    <td className="px-6 py-4">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedLeads.includes(lead.id)}
-                                                            onChange={() => toggleSelectLead(lead.id)}
-                                                            className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary"
-                                                        />
-                                                    </td>
-                                                    <td className="px-6 py-4 text-[10px] font-mono text-gray-600">
-                                                        {index + 1}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div>
-                                                            <div className="text-xs font-bold text-white mb-0.5">{lead.email}</div>
-                                                            <div className="text-[10px] text-gray-500 font-mono">{lead.phone}</div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className="bg-white/5 text-gray-300 px-2 py-1 rounded text-[10px] font-bold border border-white/5">{lead.plan}</span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-xs font-bold text-gray-300">
-                                                        {formatCurrency(parsePrice(lead.price))}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="text-[10px] text-gray-300 font-bold">
-                                                            {lead.createdAt?.toDate().toLocaleDateString('pt-BR')}
-                                                        </div>
-                                                        <div className="text-[9px] text-gray-600">
-                                                            {lead.createdAt?.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider ${lead.status === 'approved' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'
-                                                            }`}>
-                                                            {lead.status === 'approved' ? 'Aprovado' : 'Pendente'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="p-2 bg-green-500/10 text-green-500 rounded hover:bg-green-500 hover:text-white transition-colors">
-                                                                <Phone size={14} />
-                                                            </a>
-                                                            <button onClick={() => toggleStatus(lead)} className="p-2 bg-white/5 text-gray-400 rounded hover:bg-primary hover:text-white transition-colors">
-                                                                {lead.status === 'approved' ? <LogOut size={14} /> : <CheckCircle2 size={14} />}
-                                                            </button>
-                                                            <button onClick={() => deleteLead(lead.id)} className="p-2 bg-white/5 text-gray-400 rounded hover:bg-red-500 hover:text-white transition-colors">
-                                                                <Trash2 size={14} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
+                            <div className="relative w-full md:w-64">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar lead..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-primary/50"
+                                />
                             </div>
                         </div>
                     </div>
-                )}
 
-                {activeTab === 'expiring' && (
-                    // --- EXPIRING SOON LIST TAB ---
-                    <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
-                        <div>
-                            <h2 className="text-2xl font-black italic text-white flex items-center gap-2">
-                                <Clock className="text-primary" />
-                                Gestão de Renovações
-                            </h2>
-                            <p className="text-xs text-gray-500 mt-1">Lista completa de clientes ativos e datas de vencimento.</p>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-white/[0.02] border-b border-white/5">
+                                <tr>
+                                    <th className="px-6 py-4 w-10">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedLeads.length === metrics.data.length && metrics.data.length > 0}
+                                            onChange={toggleSelectAll}
+                                            className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary"
+                                        />
+                                    </th>
+                                    <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500">#</th>
+                                    {['Cliente', 'Plano', 'Valor', 'Data/Hora', 'Status', 'Ações'].map(h => (
+                                        <th key={h} className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500">{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {metrics.data.length === 0 ? (
+                                    <tr><td colSpan={8} className="text-center py-12 text-gray-500 text-xs">Nenhum registro encontrado.</td></tr>
+                                ) : (
+                                    metrics.data.map((lead, index) => (
+                                        <tr key={lead.id} className={`hover:bg-white/[0.02] transition-colors ${selectedLeads.includes(lead.id) ? 'bg-primary/5' : ''}`}>
+                                            <td className="px-6 py-4">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedLeads.includes(lead.id)}
+                                                    onChange={() => toggleSelectLead(lead.id)}
+                                                    className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary"
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4 text-[10px] font-mono text-gray-600">
+                                                {index + 1}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div>
+                                                    <div className="text-xs font-bold text-white mb-0.5">{lead.email}</div>
+                                                    <div className="text-[10px] text-gray-500 font-mono">{lead.phone}</div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="bg-white/5 text-gray-300 px-2 py-1 rounded text-[10px] font-bold border border-white/5">{lead.plan}</span>
+                                            </td>
+                                            <td className="px-6 py-4 text-xs font-bold text-gray-300">
+                                                {formatCurrency(parsePrice(lead.price))}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-[10px] text-gray-300 font-bold">
+                                                    {lead.createdAt?.toDate().toLocaleDateString('pt-BR')}
+                                                </div>
+                                                <div className="text-[9px] text-gray-600">
+                                                    {lead.createdAt?.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider ${lead.status === 'approved' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'
+                                                    }`}>
+                                                    {lead.status === 'approved' ? 'Aprovado' : 'Pendente'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="p-2 bg-green-500/10 text-green-500 rounded hover:bg-green-500 hover:text-white transition-colors">
+                                                        <Phone size={14} />
+                                                    </a>
+                                                    <button onClick={() => toggleStatus(lead)} className="p-2 bg-white/5 text-gray-400 rounded hover:bg-primary hover:text-white transition-colors">
+                                                        {lead.status === 'approved' ? <LogOut size={14} /> : <CheckCircle2 size={14} />}
+                                                    </button>
+                                                    <button onClick={() => deleteLead(lead.id)} className="p-2 bg-white/5 text-gray-400 rounded hover:bg-red-500 hover:text-white transition-colors">
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+        </div>
+    )
+}
+
+{
+    activeTab === 'expiring' && (
+        // --- EXPIRING SOON LIST TAB ---
+        <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
+            <div>
+                <h2 className="text-2xl font-black italic text-white flex items-center gap-2">
+                    <Clock className="text-primary" />
+                    Gestão de Renovações
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">Lista completa de clientes ativos e datas de vencimento.</p>
+            </div>
+
+            <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-white/[0.02] border-b border-white/5">
+                            <tr>
+                                {['Cliente', 'Plano Atual', 'Situação', 'Cobrança Inteligente'].map(h => (
+                                    <th key={h} className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500">{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                            {metrics.expiring.length === 0 ? (
+                                <tr><td colSpan={4} className="text-center py-12 text-gray-500 text-xs">Nenhum cliente ativo no momento.</td></tr>
+                            ) : (
+                                metrics.expiring.map(lead => {
+                                    const daysLeft = getDaysRemaining(lead.createdAt, lead.plan);
+                                    const isUrgent = daysLeft <= 7;
+                                    const isExpired = daysLeft < 0;
+
+                                    let statusColor = 'text-green-500';
+                                    let statusText = `${daysLeft} dias restantes`;
+
+                                    if (isExpired) {
+                                        statusColor = 'text-gray-500';
+                                        statusText = `Expirado há ${Math.abs(daysLeft)} dias`;
+                                    } else if (isUrgent) {
+                                        statusColor = 'text-red-500 font-bold';
+                                        statusText = `Expira em ${daysLeft} dias`;
+                                    }
+
+                                    return (
+                                        <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
+                                            <td className="px-6 py-4">
+                                                <div>
+                                                    <div className="text-xs font-bold text-white mb-0.5">{lead.email}</div>
+                                                    <div className="text-[10px] text-gray-500 font-mono">{lead.phone}</div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="bg-white/5 text-gray-300 px-2 py-1 rounded text-[10px] font-bold border border-white/5">{lead.plan}</span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    {isUrgent && <AlertCircle size={14} className="text-red-500 animate-pulse" />}
+                                                    <span className={`text-xs ${statusColor}`}>{statusText}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedLead(lead);
+                                                        setDiscount(0); // Reset discount
+                                                    }}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-green-600/10 text-green-500 hover:bg-green-600 hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest border border-green-600/20"
+                                                >
+                                                    <Smartphone size={14} />
+                                                    Enviar Proposta
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Modal de Envio de Mensagem */}
+            {selectedLead && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <div className="bg-[#0f0f0f] border border-white/10 rounded-2xl w-full max-w-lg p-6 relative shadow-2xl">
+                        <button
+                            onClick={() => setSelectedLead(null)}
+                            className="absolute top-4 right-4 text-gray-500 hover:text-white"
+                        >
+                            <LogOut size={20} className="rotate-45" /> {/* Close Icon */}
+                        </button>
+
+                        <div className="mb-6">
+                            <h3 className="text-xl font-black italic text-white flex items-center gap-2">
+                                <Send size={20} className="text-green-500" />
+                                Enviar Proposta WhatsApp
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1">Para: <span className="text-white font-bold">{selectedLead.email}</span></p>
                         </div>
 
-                        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead className="bg-white/[0.02] border-b border-white/5">
-                                        <tr>
-                                            {['Cliente', 'Plano Atual', 'Situação', 'Cobrança Inteligente'].map(h => (
-                                                <th key={h} className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500">{h}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {metrics.expiring.length === 0 ? (
-                                            <tr><td colSpan={4} className="text-center py-12 text-gray-500 text-xs">Nenhum cliente ativo no momento.</td></tr>
-                                        ) : (
-                                            metrics.expiring.map(lead => {
-                                                const daysLeft = getDaysRemaining(lead.createdAt, lead.plan);
-                                                const isUrgent = daysLeft <= 7;
-                                                const isExpired = daysLeft < 0;
-
-                                                let statusColor = 'text-green-500';
-                                                let statusText = `${daysLeft} dias restantes`;
-
-                                                if (isExpired) {
-                                                    statusColor = 'text-gray-500';
-                                                    statusText = `Expirado há ${Math.abs(daysLeft)} dias`;
-                                                } else if (isUrgent) {
-                                                    statusColor = 'text-red-500 font-bold';
-                                                    statusText = `Expira em ${daysLeft} dias`;
-                                                }
-
-                                                return (
-                                                    <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
-                                                        <td className="px-6 py-4">
-                                                            <div>
-                                                                <div className="text-xs font-bold text-white mb-0.5">{lead.email}</div>
-                                                                <div className="text-[10px] text-gray-500 font-mono">{lead.phone}</div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <span className="bg-white/5 text-gray-300 px-2 py-1 rounded text-[10px] font-bold border border-white/5">{lead.plan}</span>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center gap-2">
-                                                                {isUrgent && <AlertCircle size={14} className="text-red-500 animate-pulse" />}
-                                                                <span className={`text-xs ${statusColor}`}>{statusText}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedLead(lead);
-                                                                    setDiscount(0); // Reset discount
-                                                                }}
-                                                                className="flex items-center gap-2 px-4 py-2 bg-green-600/10 text-green-500 hover:bg-green-600 hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest border border-green-600/20"
-                                                            >
-                                                                <Smartphone size={14} />
-                                                                Enviar Proposta
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })
-                                        )}
-                                    </tbody>
-                                </table>
+                        {/* Discount Slider */}
+                        <div className="mb-8 bg-white/5 p-4 rounded-xl border border-white/5">
+                            <label className="flex items-center justify-between text-xs font-bold text-gray-300 mb-2 uppercase tracking-wide">
+                                <span className="flex items-center gap-2"><Percent size={14} className="text-primary" /> Aplicar Desconto Especial</span>
+                                <span className="text-primary font-black">{discount}% OFF</span>
+                            </label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="50"
+                                step="5"
+                                value={discount}
+                                onChange={(e) => setDiscount(Number(e.target.value))}
+                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                            />
+                            <div className="flex justify-between text-[9px] text-gray-600 mt-2 font-mono">
+                                <span>0%</span>
+                                <span>25%</span>
+                                <span>50%</span>
                             </div>
                         </div>
 
-                        {/* Modal de Envio de Mensagem */}
-                        {selectedLead && (
-                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                                <div className="bg-[#0f0f0f] border border-white/10 rounded-2xl w-full max-w-lg p-6 relative shadow-2xl">
-                                    <button
-                                        onClick={() => setSelectedLead(null)}
-                                        className="absolute top-4 right-4 text-gray-500 hover:text-white"
-                                    >
-                                        <LogOut size={20} className="rotate-45" /> {/* Close Icon */}
-                                    </button>
+                        <div className="space-y-6">
+                            {[
+                                { type: 'renew' as const, title: 'Renovação VIP (Mensal)', color: 'border-green-500/30' },
+                                { type: 'upgrade3' as const, title: 'Upsell Trimestral (90 Dias)', color: 'border-purple-500/30' },
+                                { type: 'upgrade6' as const, title: 'Fidelização Semestral (180 Dias)', color: 'border-blue-500/30' }
+                            ].map((opt) => {
+                                const vars = generateMessage(opt.type) as Record<string, string>;
+                                const linkOnly = (vars as any).checkoutLink;
 
-                                    <div className="mb-6">
-                                        <h3 className="text-xl font-black italic text-white flex items-center gap-2">
-                                            <Send size={20} className="text-green-500" />
-                                            Enviar Proposta WhatsApp
-                                        </h3>
-                                        <p className="text-xs text-gray-500 mt-1">Para: <span className="text-white font-bold">{selectedLead.email}</span></p>
-                                    </div>
+                                return (
+                                    <div key={opt.type} className={`bg-white/5 p-4 rounded-xl border-t-4 ${opt.color} flex flex-col gap-4 group transition-all`}>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] font-black text-white uppercase tracking-widest">{opt.title}</span>
+                                        </div>
 
-                                    {/* Discount Slider */}
-                                    <div className="mb-8 bg-white/5 p-4 rounded-xl border border-white/5">
-                                        <label className="flex items-center justify-between text-xs font-bold text-gray-300 mb-2 uppercase tracking-wide">
-                                            <span className="flex items-center gap-2"><Percent size={14} className="text-primary" /> Aplicar Desconto Especial</span>
-                                            <span className="text-primary font-black">{discount}% OFF</span>
-                                        </label>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="50"
-                                            step="5"
-                                            value={discount}
-                                            onChange={(e) => setDiscount(Number(e.target.value))}
-                                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
-                                        />
-                                        <div className="flex justify-between text-[9px] text-gray-600 mt-2 font-mono">
-                                            <span>0%</span>
-                                            <span>25%</span>
-                                            <span>50%</span>
+                                        {/* Tabs de Variação */}
+                                        <div className="flex bg-black/40 p-1 rounded-lg gap-1 border border-white/5 overflow-x-auto no-scrollbar">
+                                            {['direct', 'creative', 'aggressive'].map((v) => (
+                                                <a
+                                                    key={v}
+                                                    href={`https://wa.me/${selectedLead!.phone.replace(/\D/g, '')}?text=${encodeURIComponent(vars[v])}`}
+                                                    target="_blank"
+                                                    className="flex-1 min-w-[80px] text-center p-2 rounded-md hover:bg-white/10 transition-colors flex flex-col items-center gap-1 group/btn"
+                                                >
+                                                    <span className="text-[8px] font-black uppercase text-gray-500 group-hover/btn:text-primary tracking-widest leading-none">
+                                                        {v === 'direct' ? 'Direta' : v === 'creative' ? 'Criativa' : 'Agressiva'}
+                                                    </span>
+                                                    <Smartphone size={12} className="text-gray-600 group-hover/btn:text-white" />
+                                                </a>
+                                            ))}
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(linkOnly);
+                                                    alert('Link de checkout copiado!');
+                                                }}
+                                                className="flex-1 bg-white/5 hover:bg-white text-gray-400 hover:text-black text-[10px] font-black py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all uppercase tracking-widest border border-white/10"
+                                            >
+                                                <Copy size={14} />
+                                                Copiar Checkout
+                                            </button>
                                         </div>
                                     </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
 
-                                    <div className="space-y-4">
-                                        {[
-                                            { type: 'renew' as const, title: 'Renovação VIP (Mensal)', color: 'border-green-500/30' },
-                                            { type: 'upgrade3' as const, title: 'Upsell Trimestral (90 Dias)', color: 'border-purple-500/30' },
-                                            { type: 'upgrade6' as const, title: 'Fidelização Semestral (180 Dias)', color: 'border-blue-500/30' }
-                                        ].map((opt) => {
-                                            const { waLink, checkoutLink } = generateMessage(opt.type);
-                                            return (
-                                                <div key={opt.type} className={`bg-white/5 p-4 rounded-xl border ${opt.color} flex flex-col gap-3 group`}>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{opt.title}</span>
-                                                        <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded font-bold uppercase">WhatsApp</span>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <a
-                                                            href={waLink}
-                                                            target="_blank"
-                                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black py-3 rounded-lg flex items-center justify-center gap-2 transition-all uppercase tracking-widest"
-                                                        >
-                                                            <Smartphone size={14} />
-                                                            Enviar via WhatsApp
-                                                        </a>
-                                                        <button
-                                                            onClick={() => {
-                                                                navigator.clipboard.writeText(checkoutLink);
-                                                                alert('Link de pagamento copiado!');
-                                                            }}
-                                                            className="px-4 bg-white/10 hover:bg-white text-gray-400 hover:text-black rounded-lg transition-all"
-                                                            title="Copiar Link de Pagamento"
-                                                        >
-                                                            <Copy size={16} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+{
+    activeTab === 'pix' && (
+        // --- PIX GENERATOR TAB ---
+        <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto h-full flex flex-col justify-center">
+            <div>
+                <h2 className="text-2xl font-black italic text-white flex items-center gap-2">
+                    <QrCode className="text-primary" />
+                    Gerador de Pix Copy & Paste
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">Crie cobranças instantâneas para enviar via WhatsApp.</p>
+            </div>
+
+            <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                        <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5">
+                            <button
+                                onClick={() => setPixType('anon')}
+                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${pixType === 'anon' ? 'bg-primary text-white' : 'text-gray-500 hover:text-white'}`}
+                            >
+                                Anônimo
+                            </button>
+                            <button
+                                onClick={() => setPixType('real')}
+                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${pixType === 'real' ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}
+                            >
+                                Dados Reais
+                            </button>
+                        </div>
+
+                        {pixType === 'real' && (
+                            <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div>
+                                    <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">Email do Cliente</label>
+                                    <input
+                                        type="email"
+                                        placeholder="cliente@email.com"
+                                        value={realEmail}
+                                        onChange={(e) => setRealEmail(e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">WhatsApp (com DDD)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="71999999999"
+                                        value={realPhone}
+                                        onChange={(e) => setRealPhone(e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
+                                    />
                                 </div>
                             </div>
                         )}
-                    </div>
-                )}
 
-                {activeTab === 'pix' && (
-                    // --- PIX GENERATOR TAB ---
-                    <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto h-full flex flex-col justify-center">
                         <div>
-                            <h2 className="text-2xl font-black italic text-white flex items-center gap-2">
-                                <QrCode className="text-primary" />
-                                Gerador de Pix Copy & Paste
-                            </h2>
-                            <p className="text-xs text-gray-500 mt-1">Crie cobranças instantâneas para enviar via WhatsApp.</p>
+                            <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2 block">Valor da Cobrança (R$)</label>
+                            <input
+                                type="text"
+                                placeholder="Ex: 29,90"
+                                value={pixAmount}
+                                onChange={(e) => setPixAmount(e.target.value)}
+                                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-2xl font-black tracking-tighter focus:border-primary/50 focus:outline-none placeholder:text-gray-700"
+                            />
+                            <p className="text-[10px] text-gray-600 mt-2 italic">* A cobrança será gerada na conta PushinPay configurada.</p>
                         </div>
 
-                        <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-6">
-                                    <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5">
-                                        <button
-                                            onClick={() => setPixType('anon')}
-                                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${pixType === 'anon' ? 'bg-primary text-white' : 'text-gray-500 hover:text-white'}`}
-                                        >
-                                            Anônimo
-                                        </button>
-                                        <button
-                                            onClick={() => setPixType('real')}
-                                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${pixType === 'real' ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}
-                                        >
-                                            Dados Reais
-                                        </button>
-                                    </div>
-
-                                    {pixType === 'real' && (
-                                        <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <div>
-                                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">Email do Cliente</label>
-                                                <input
-                                                    type="email"
-                                                    placeholder="cliente@email.com"
-                                                    value={realEmail}
-                                                    onChange={(e) => setRealEmail(e.target.value)}
-                                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">WhatsApp (com DDD)</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="71999999999"
-                                                    value={realPhone}
-                                                    onChange={(e) => setRealPhone(e.target.value)}
-                                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div>
-                                        <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2 block">Valor da Cobrança (R$)</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Ex: 29,90"
-                                            value={pixAmount}
-                                            onChange={(e) => setPixAmount(e.target.value)}
-                                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-2xl font-black tracking-tighter focus:border-primary/50 focus:outline-none placeholder:text-gray-700"
-                                        />
-                                        <p className="text-[10px] text-gray-600 mt-2 italic">* A cobrança será gerada na conta PushinPay configurada.</p>
-                                    </div>
-
-                                    <button
-                                        onClick={handleGeneratePixCode}
-                                        disabled={pixLoading}
-                                        className="w-full bg-primary hover:bg-red-600 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-50"
-                                    >
-                                        {pixLoading ? <Loader2 className="animate-spin" size={18} /> : (
-                                            <>
-                                                <QrCode size={18} />
-                                                GERAR PIX {pixType === 'anon' ? 'ANÔNIMO' : 'REAL'}
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-
-                                <div className="flex flex-col items-center justify-center bg-white/5 rounded-2xl p-6 border border-white/5 relative">
-                                    {generatedPixString ? (
-                                        <>
-                                            {manualPixStatus === 'approved' ? (
-                                                <div className="text-center animate-in zoom-in duration-500">
-                                                    <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(34,197,94,0.4)]">
-                                                        <CheckCircle2 size={48} className="text-white" />
-                                                    </div>
-                                                    <h3 className="text-xl font-black italic text-white uppercase tracking-tighter">Pagamento Aprovado!</h3>
-                                                    <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest mt-2">Venda registrada com sucesso</p>
-                                                    <button
-                                                        onClick={() => {
-                                                            setGeneratedPixString('');
-                                                            setManualPixStatus('none');
-                                                        }}
-                                                        className="mt-6 text-[10px] text-gray-500 hover:text-white underline decoration-primary font-bold uppercase tracking-widest"
-                                                    >
-                                                        Gerar Nova Cobrança
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <div className="bg-white p-4 rounded-xl mb-6 border-4 border-primary/20 relative group">
-                                                        <img
-                                                            src={generatedPixImage.startsWith('data:') ? generatedPixImage : `data:image/png;base64,${generatedPixImage}`}
-                                                            alt="QR Code Pix"
-                                                            className="w-64 h-64 object-contain"
-                                                        />
-                                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
-                                                            <p className="text-white text-[10px] font-black uppercase tracking-widest">Aguardando Pagamento...</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="w-full relative">
-                                                        <input
-                                                            readOnly
-                                                            value={generatedPixString}
-                                                            className="w-full bg-black/50 border border-white/10 rounded-lg pl-3 pr-10 py-2 text-[10px] text-gray-400 font-mono truncate focus:outline-none"
-                                                        />
-                                                        <button
-                                                            onClick={() => {
-                                                                navigator.clipboard.writeText(generatedPixString);
-                                                                alert('Pix Copiado!');
-                                                            }}
-                                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors"
-                                                        >
-                                                            <Copy size={16} />
-                                                        </button>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 mt-4">
-                                                        <Loader2 size={12} className="text-primary animate-spin" />
-                                                        <p className="text-[10px] text-primary font-bold uppercase tracking-widest animate-pulse">
-                                                            Monitorando Aprovação...
-                                                        </p>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <div className="text-center opacity-30">
-                                            <QrCode size={64} className="mx-auto mb-4" />
-                                            <p className="text-xs font-bold uppercase tracking-widest">Aguardando dados...</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                        <button
+                            onClick={handleGeneratePixCode}
+                            disabled={pixLoading}
+                            className="w-full bg-primary hover:bg-red-600 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-50"
+                        >
+                            {pixLoading ? <Loader2 className="animate-spin" size={18} /> : (
+                                <>
+                                    <QrCode size={18} />
+                                    GERAR PIX {pixType === 'anon' ? 'ANÔNIMO' : 'REAL'}
+                                </>
+                            )}
+                        </button>
                     </div>
-                )}
+
+                    <div className="flex flex-col items-center justify-center bg-white/5 rounded-2xl p-6 border border-white/5 relative">
+                        {generatedPixString ? (
+                            <>
+                                {manualPixStatus === 'approved' ? (
+                                    <div className="text-center animate-in zoom-in duration-500">
+                                        <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(34,197,94,0.4)]">
+                                            <CheckCircle2 size={48} className="text-white" />
+                                        </div>
+                                        <h3 className="text-xl font-black italic text-white uppercase tracking-tighter">Pagamento Aprovado!</h3>
+                                        <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest mt-2">Venda registrada com sucesso</p>
+                                        <button
+                                            onClick={() => {
+                                                setGeneratedPixString('');
+                                                setManualPixStatus('none');
+                                            }}
+                                            className="mt-6 text-[10px] text-gray-500 hover:text-white underline decoration-primary font-bold uppercase tracking-widest"
+                                        >
+                                            Gerar Nova Cobrança
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="bg-white p-4 rounded-xl mb-6 border-4 border-primary/20 relative group">
+                                            <img
+                                                src={generatedPixImage.startsWith('data:') ? generatedPixImage : `data:image/png;base64,${generatedPixImage}`}
+                                                alt="QR Code Pix"
+                                                className="w-64 h-64 object-contain"
+                                            />
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+                                                <p className="text-white text-[10px] font-black uppercase tracking-widest">Aguardando Pagamento...</p>
+                                            </div>
+                                        </div>
+                                        <div className="w-full relative">
+                                            <input
+                                                readOnly
+                                                value={generatedPixString}
+                                                className="w-full bg-black/50 border border-white/10 rounded-lg pl-3 pr-10 py-2 text-[10px] text-gray-400 font-mono truncate focus:outline-none"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(generatedPixString);
+                                                    alert('Pix Copiado!');
+                                                }}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors"
+                                            >
+                                                <Copy size={16} />
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-4">
+                                            <Loader2 size={12} className="text-primary animate-spin" />
+                                            <p className="text-[10px] text-primary font-bold uppercase tracking-widest animate-pulse">
+                                                Monitorando Aprovação...
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <div className="text-center opacity-30">
+                                <QrCode size={64} className="mx-auto mb-4" />
+                                <p className="text-xs font-bold uppercase tracking-widest">Aguardando dados...</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
             </main >
         </div >
     );
