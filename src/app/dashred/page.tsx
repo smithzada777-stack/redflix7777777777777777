@@ -774,334 +774,329 @@ export default function AdminDashboard() {
                         </table>
                     </div>
                 </div>
-        </div>
-    )
-}
+            )}
 
-{
-    activeTab === 'expiring' && (
-        // --- EXPIRING SOON LIST TAB ---
-        <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
-            <div>
-                <h2 className="text-2xl font-black italic text-white flex items-center gap-2">
-                    <Clock className="text-primary" />
-                    Gestão de Renovações
-                </h2>
-                <p className="text-xs text-gray-500 mt-1">Lista completa de clientes ativos e datas de vencimento.</p>
-            </div>
-
-            <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-white/[0.02] border-b border-white/5">
-                            <tr>
-                                {['Cliente', 'Plano Atual', 'Situação', 'Cobrança Inteligente'].map(h => (
-                                    <th key={h} className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500">{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {metrics.expiring.length === 0 ? (
-                                <tr><td colSpan={4} className="text-center py-12 text-gray-500 text-xs">Nenhum cliente ativo no momento.</td></tr>
-                            ) : (
-                                metrics.expiring.map(lead => {
-                                    const daysLeft = getDaysRemaining(lead.createdAt, lead.plan);
-                                    const isUrgent = daysLeft <= 7;
-                                    const isExpired = daysLeft < 0;
-
-                                    let statusColor = 'text-green-500';
-                                    let statusText = `${daysLeft} dias restantes`;
-
-                                    if (isExpired) {
-                                        statusColor = 'text-gray-500';
-                                        statusText = `Expirado há ${Math.abs(daysLeft)} dias`;
-                                    } else if (isUrgent) {
-                                        statusColor = 'text-red-500 font-bold';
-                                        statusText = `Expira em ${daysLeft} dias`;
-                                    }
-
-                                    return (
-                                        <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <div>
-                                                    <div className="text-xs font-bold text-white mb-0.5">{lead.email}</div>
-                                                    <div className="text-[10px] text-gray-500 font-mono">{lead.phone}</div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="bg-white/5 text-gray-300 px-2 py-1 rounded text-[10px] font-bold border border-white/5">{lead.plan}</span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    {isUrgent && <AlertCircle size={14} className="text-red-500 animate-pulse" />}
-                                                    <span className={`text-xs ${statusColor}`}>{statusText}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedLead(lead);
-                                                        setDiscount(0); // Reset discount
-                                                    }}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-green-600/10 text-green-500 hover:bg-green-600 hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest border border-green-600/20"
-                                                >
-                                                    <Smartphone size={14} />
-                                                    Enviar Proposta
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Modal de Envio de Mensagem */}
-            {selectedLead && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-[#0f0f0f] border border-white/10 rounded-2xl w-full max-w-lg p-6 relative shadow-2xl">
-                        <button
-                            onClick={() => setSelectedLead(null)}
-                            className="absolute top-4 right-4 text-gray-500 hover:text-white"
-                        >
-                            <LogOut size={20} className="rotate-45" /> {/* Close Icon */}
-                        </button>
-
-                        <div className="mb-6">
-                            <h3 className="text-xl font-black italic text-white flex items-center gap-2">
-                                <Send size={20} className="text-green-500" />
-                                Enviar Proposta WhatsApp
-                            </h3>
-                            <p className="text-xs text-gray-500 mt-1">Para: <span className="text-white font-bold">{selectedLead.email}</span></p>
+                {activeTab === 'expiring' && (
+                    // --- EXPIRING SOON LIST TAB ---
+                    <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
+                        <div>
+                            <h2 className="text-2xl font-black italic text-white flex items-center gap-2">
+                                <Clock className="text-primary" />
+                                Gestão de Renovações
+                            </h2>
+                            <p className="text-xs text-gray-500 mt-1">Lista completa de clientes ativos e datas de vencimento.</p>
                         </div>
 
-                        {/* Discount Slider */}
-                        <div className="mb-8 bg-white/5 p-4 rounded-xl border border-white/5">
-                            <label className="flex items-center justify-between text-xs font-bold text-gray-300 mb-2 uppercase tracking-wide">
-                                <span className="flex items-center gap-2"><Percent size={14} className="text-primary" /> Aplicar Desconto Especial</span>
-                                <span className="text-primary font-black">{discount}% OFF</span>
-                            </label>
-                            <input
-                                type="range"
-                                min="0"
-                                max="50"
-                                step="5"
-                                value={discount}
-                                onChange={(e) => setDiscount(Number(e.target.value))}
-                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
-                            />
-                            <div className="flex justify-between text-[9px] text-gray-600 mt-2 font-mono">
-                                <span>0%</span>
-                                <span>25%</span>
-                                <span>50%</span>
+                        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-white/[0.02] border-b border-white/5">
+                                        <tr>
+                                            {['Cliente', 'Plano Atual', 'Situação', 'Cobrança Inteligente'].map(h => (
+                                                <th key={h} className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-gray-500">{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {metrics.expiring.length === 0 ? (
+                                            <tr><td colSpan={4} className="text-center py-12 text-gray-500 text-xs">Nenhum cliente ativo no momento.</td></tr>
+                                        ) : (
+                                            metrics.expiring.map(lead => {
+                                                const daysLeft = getDaysRemaining(lead.createdAt, lead.plan);
+                                                const isUrgent = daysLeft <= 7;
+                                                const isExpired = daysLeft < 0;
+
+                                                let statusColor = 'text-green-500';
+                                                let statusText = `${daysLeft} dias restantes`;
+
+                                                if (isExpired) {
+                                                    statusColor = 'text-gray-500';
+                                                    statusText = `Expirado há ${Math.abs(daysLeft)} dias`;
+                                                } else if (isUrgent) {
+                                                    statusColor = 'text-red-500 font-bold';
+                                                    statusText = `Expira em ${daysLeft} dias`;
+                                                }
+
+                                                return (
+                                                    <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
+                                                        <td className="px-6 py-4">
+                                                            <div>
+                                                                <div className="text-xs font-bold text-white mb-0.5">{lead.email}</div>
+                                                                <div className="text-[10px] text-gray-500 font-mono">{lead.phone}</div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className="bg-white/5 text-gray-300 px-2 py-1 rounded text-[10px] font-bold border border-white/5">{lead.plan}</span>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center gap-2">
+                                                                {isUrgent && <AlertCircle size={14} className="text-red-500 animate-pulse" />}
+                                                                <span className={`text-xs ${statusColor}`}>{statusText}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedLead(lead);
+                                                                    setDiscount(0); // Reset discount
+                                                                }}
+                                                                className="flex items-center gap-2 px-4 py-2 bg-green-600/10 text-green-500 hover:bg-green-600 hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest border border-green-600/20"
+                                                            >
+                                                                <Smartphone size={14} />
+                                                                Enviar Proposta
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
-                        <div className="space-y-6">
-                            {[
-                                { type: 'renew' as const, title: 'Renovação VIP (Mensal)', color: 'border-green-500/30' },
-                                { type: 'upgrade3' as const, title: 'Upsell Trimestral (90 Dias)', color: 'border-purple-500/30' },
-                                { type: 'upgrade6' as const, title: 'Fidelização Semestral (180 Dias)', color: 'border-blue-500/30' }
-                            ].map((opt) => {
-                                const vars = generateMessage(opt.type) as Record<string, string>;
-                                const linkOnly = (vars as any).checkoutLink;
+                        {/* Modal de Envio de Mensagem */}
+                        {selectedLead && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                                <div className="bg-[#0f0f0f] border border-white/10 rounded-2xl w-full max-w-lg p-6 relative shadow-2xl">
+                                    <button
+                                        onClick={() => setSelectedLead(null)}
+                                        className="absolute top-4 right-4 text-gray-500 hover:text-white"
+                                    >
+                                        <LogOut size={20} className="rotate-45" /> {/* Close Icon */}
+                                    </button>
 
-                                return (
-                                    <div key={opt.type} className={`bg-white/5 p-4 rounded-xl border-t-4 ${opt.color} flex flex-col gap-4 group transition-all`}>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-black text-white uppercase tracking-widest">{opt.title}</span>
-                                        </div>
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-black italic text-white flex items-center gap-2">
+                                            <Send size={20} className="text-green-500" />
+                                            Enviar Proposta WhatsApp
+                                        </h3>
+                                        <p className="text-xs text-gray-500 mt-1">Para: <span className="text-white font-bold">{selectedLead.email}</span></p>
+                                    </div>
 
-                                        {/* Tabs de Variação */}
-                                        <div className="flex bg-black/40 p-1 rounded-lg gap-1 border border-white/5 overflow-x-auto no-scrollbar">
-                                            {['direct', 'creative', 'aggressive'].map((v) => (
-                                                <a
-                                                    key={v}
-                                                    href={`https://wa.me/${selectedLead!.phone.replace(/\D/g, '')}?text=${encodeURIComponent(vars[v])}`}
-                                                    target="_blank"
-                                                    className="flex-1 min-w-[80px] text-center p-2 rounded-md hover:bg-white/10 transition-colors flex flex-col items-center gap-1 group/btn"
-                                                >
-                                                    <span className="text-[8px] font-black uppercase text-gray-500 group-hover/btn:text-primary tracking-widest leading-none">
-                                                        {v === 'direct' ? 'Direta' : v === 'creative' ? 'Criativa' : 'Agressiva'}
-                                                    </span>
-                                                    <Smartphone size={12} className="text-gray-600 group-hover/btn:text-white" />
-                                                </a>
-                                            ))}
-                                        </div>
-
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(linkOnly);
-                                                    alert('Link de checkout copiado!');
-                                                }}
-                                                className="flex-1 bg-white/5 hover:bg-white text-gray-400 hover:text-black text-[10px] font-black py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all uppercase tracking-widest border border-white/10"
-                                            >
-                                                <Copy size={14} />
-                                                Copiar Checkout
-                                            </button>
+                                    {/* Discount Slider */}
+                                    <div className="mb-8 bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <label className="flex items-center justify-between text-xs font-bold text-gray-300 mb-2 uppercase tracking-wide">
+                                            <span className="flex items-center gap-2"><Percent size={14} className="text-primary" /> Aplicar Desconto Especial</span>
+                                            <span className="text-primary font-black">{discount}% OFF</span>
+                                        </label>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="50"
+                                            step="5"
+                                            value={discount}
+                                            onChange={(e) => setDiscount(Number(e.target.value))}
+                                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                                        />
+                                        <div className="flex justify-between text-[9px] text-gray-600 mt-2 font-mono">
+                                            <span>0%</span>
+                                            <span>25%</span>
+                                            <span>50%</span>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    )
-}
 
-{
-    activeTab === 'pix' && (
-        // --- PIX GENERATOR TAB ---
-        <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto h-full flex flex-col justify-center">
-            <div>
-                <h2 className="text-2xl font-black italic text-white flex items-center gap-2">
-                    <QrCode className="text-primary" />
-                    Gerador de Pix Copy & Paste
-                </h2>
-                <p className="text-xs text-gray-500 mt-1">Crie cobranças instantâneas para enviar via WhatsApp.</p>
-            </div>
+                                    <div className="space-y-6">
+                                        {[
+                                            { type: 'renew' as const, title: 'Renovação VIP (Mensal)', color: 'border-green-500/30' },
+                                            { type: 'upgrade3' as const, title: 'Upsell Trimestral (90 Dias)', color: 'border-purple-500/30' },
+                                            { type: 'upgrade6' as const, title: 'Fidelização Semestral (180 Dias)', color: 'border-blue-500/30' }
+                                        ].map((opt) => {
+                                            const vars = generateMessage(opt.type) as Record<string, string>;
+                                            const linkOnly = (vars as any).checkoutLink;
 
-            <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                        <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5">
-                            <button
-                                onClick={() => setPixType('anon')}
-                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${pixType === 'anon' ? 'bg-primary text-white' : 'text-gray-500 hover:text-white'}`}
-                            >
-                                Anônimo
-                            </button>
-                            <button
-                                onClick={() => setPixType('real')}
-                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${pixType === 'real' ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}
-                            >
-                                Dados Reais
-                            </button>
-                        </div>
+                                            return (
+                                                <div key={opt.type} className={`bg-white/5 p-4 rounded-xl border-t-4 ${opt.color} flex flex-col gap-4 group transition-all`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[11px] font-black text-white uppercase tracking-widest">{opt.title}</span>
+                                                    </div>
 
-                        {pixType === 'real' && (
-                            <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                <div>
-                                    <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">Email do Cliente</label>
-                                    <input
-                                        type="email"
-                                        placeholder="cliente@email.com"
-                                        value={realEmail}
-                                        onChange={(e) => setRealEmail(e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">WhatsApp (com DDD)</label>
-                                    <input
-                                        type="text"
-                                        placeholder="71999999999"
-                                        value={realPhone}
-                                        onChange={(e) => setRealPhone(e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
-                                    />
+                                                    {/* Tabs de Variação */}
+                                                    <div className="flex bg-black/40 p-1 rounded-lg gap-1 border border-white/5 overflow-x-auto no-scrollbar">
+                                                        {['direct', 'creative', 'aggressive'].map((v) => (
+                                                            <a
+                                                                key={v}
+                                                                href={`https://wa.me/${selectedLead!.phone.replace(/\D/g, '')}?text=${encodeURIComponent(vars[v])}`}
+                                                                target="_blank"
+                                                                className="flex-1 min-w-[80px] text-center p-2 rounded-md hover:bg-white/10 transition-colors flex flex-col items-center gap-1 group/btn"
+                                                            >
+                                                                <span className="text-[8px] font-black uppercase text-gray-500 group-hover/btn:text-primary tracking-widest leading-none">
+                                                                    {v === 'direct' ? 'Direta' : v === 'creative' ? 'Criativa' : 'Agressiva'}
+                                                                </span>
+                                                                <Smartphone size={12} className="text-gray-600 group-hover/btn:text-white" />
+                                                            </a>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(linkOnly);
+                                                                alert('Link de checkout copiado!');
+                                                            }}
+                                                            className="flex-1 bg-white/5 hover:bg-white text-gray-400 hover:text-black text-[10px] font-black py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all uppercase tracking-widest border border-white/10"
+                                                        >
+                                                            <Copy size={14} />
+                                                            Copiar Checkout
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         )}
+                    </div>
+                )}
 
+                {activeTab === 'pix' && (
+                    // --- PIX GENERATOR TAB ---
+                    <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto h-full flex flex-col justify-center">
                         <div>
-                            <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2 block">Valor da Cobrança (R$)</label>
-                            <input
-                                type="text"
-                                placeholder="Ex: 29,90"
-                                value={pixAmount}
-                                onChange={(e) => setPixAmount(e.target.value)}
-                                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-2xl font-black tracking-tighter focus:border-primary/50 focus:outline-none placeholder:text-gray-700"
-                            />
-                            <p className="text-[10px] text-gray-600 mt-2 italic">* A cobrança será gerada na conta PushinPay configurada.</p>
+                            <h2 className="text-2xl font-black italic text-white flex items-center gap-2">
+                                <QrCode className="text-primary" />
+                                Gerador de Pix Copy & Paste
+                            </h2>
+                            <p className="text-xs text-gray-500 mt-1">Crie cobranças instantâneas para enviar via WhatsApp.</p>
                         </div>
 
-                        <button
-                            onClick={handleGeneratePixCode}
-                            disabled={pixLoading}
-                            className="w-full bg-primary hover:bg-red-600 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-50"
-                        >
-                            {pixLoading ? <Loader2 className="animate-spin" size={18} /> : (
-                                <>
-                                    <QrCode size={18} />
-                                    GERAR PIX {pixType === 'anon' ? 'ANÔNIMO' : 'REAL'}
-                                </>
-                            )}
-                        </button>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center bg-white/5 rounded-2xl p-6 border border-white/5 relative">
-                        {generatedPixString ? (
-                            <>
-                                {manualPixStatus === 'approved' ? (
-                                    <div className="text-center animate-in zoom-in duration-500">
-                                        <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(34,197,94,0.4)]">
-                                            <CheckCircle2 size={48} className="text-white" />
-                                        </div>
-                                        <h3 className="text-xl font-black italic text-white uppercase tracking-tighter">Pagamento Aprovado!</h3>
-                                        <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest mt-2">Venda registrada com sucesso</p>
+                        <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-6">
+                                    <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5">
                                         <button
-                                            onClick={() => {
-                                                setGeneratedPixString('');
-                                                setManualPixStatus('none');
-                                            }}
-                                            className="mt-6 text-[10px] text-gray-500 hover:text-white underline decoration-primary font-bold uppercase tracking-widest"
+                                            onClick={() => setPixType('anon')}
+                                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${pixType === 'anon' ? 'bg-primary text-white' : 'text-gray-500 hover:text-white'}`}
                                         >
-                                            Gerar Nova Cobrança
+                                            Anônimo
+                                        </button>
+                                        <button
+                                            onClick={() => setPixType('real')}
+                                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${pixType === 'real' ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}
+                                        >
+                                            Dados Reais
                                         </button>
                                     </div>
-                                ) : (
-                                    <>
-                                        <div className="bg-white p-4 rounded-xl mb-6 border-4 border-primary/20 relative group">
-                                            <img
-                                                src={generatedPixImage.startsWith('data:') ? generatedPixImage : `data:image/png;base64,${generatedPixImage}`}
-                                                alt="QR Code Pix"
-                                                className="w-64 h-64 object-contain"
-                                            />
-                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
-                                                <p className="text-white text-[10px] font-black uppercase tracking-widest">Aguardando Pagamento...</p>
+
+                                    {pixType === 'real' && (
+                                        <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <div>
+                                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">Email do Cliente</label>
+                                                <input
+                                                    type="email"
+                                                    placeholder="cliente@email.com"
+                                                    value={realEmail}
+                                                    onChange={(e) => setRealEmail(e.target.value)}
+                                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">WhatsApp (com DDD)</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="71999999999"
+                                                    value={realPhone}
+                                                    onChange={(e) => setRealPhone(e.target.value)}
+                                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
+                                                />
                                             </div>
                                         </div>
-                                        <div className="w-full relative">
-                                            <input
-                                                readOnly
-                                                value={generatedPixString}
-                                                className="w-full bg-black/50 border border-white/10 rounded-lg pl-3 pr-10 py-2 text-[10px] text-gray-400 font-mono truncate focus:outline-none"
-                                            />
-                                            <button
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(generatedPixString);
-                                                    alert('Pix Copiado!');
-                                                }}
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors"
-                                            >
-                                                <Copy size={16} />
-                                            </button>
+                                    )}
+
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2 block">Valor da Cobrança (R$)</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ex: 29,90"
+                                            value={pixAmount}
+                                            onChange={(e) => setPixAmount(e.target.value)}
+                                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-2xl font-black tracking-tighter focus:border-primary/50 focus:outline-none placeholder:text-gray-700"
+                                        />
+                                        <p className="text-[10px] text-gray-600 mt-2 italic">* A cobrança será gerada na conta PushinPay configurada.</p>
+                                    </div>
+
+                                    <button
+                                        onClick={handleGeneratePixCode}
+                                        disabled={pixLoading}
+                                        className="w-full bg-primary hover:bg-red-600 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-50"
+                                    >
+                                        {pixLoading ? <Loader2 className="animate-spin" size={18} /> : (
+                                            <>
+                                                <QrCode size={18} />
+                                                GERAR PIX {pixType === 'anon' ? 'ANÔNIMO' : 'REAL'}
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+
+                                <div className="flex flex-col items-center justify-center bg-white/5 rounded-2xl p-6 border border-white/5 relative">
+                                    {generatedPixString ? (
+                                        <>
+                                            {manualPixStatus === 'approved' ? (
+                                                <div className="text-center animate-in zoom-in duration-500">
+                                                    <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(34,197,94,0.4)]">
+                                                        <CheckCircle2 size={48} className="text-white" />
+                                                    </div>
+                                                    <h3 className="text-xl font-black italic text-white uppercase tracking-tighter">Pagamento Aprovado!</h3>
+                                                    <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest mt-2">Venda registrada com sucesso</p>
+                                                    <button
+                                                        onClick={() => {
+                                                            setGeneratedPixString('');
+                                                            setManualPixStatus('none');
+                                                        }}
+                                                        className="mt-6 text-[10px] text-gray-500 hover:text-white underline decoration-primary font-bold uppercase tracking-widest"
+                                                    >
+                                                        Gerar Nova Cobrança
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="bg-white p-4 rounded-xl mb-6 border-4 border-primary/20 relative group">
+                                                        <img
+                                                            src={generatedPixImage.startsWith('data:') ? generatedPixImage : `data:image/png;base64,${generatedPixImage}`}
+                                                            alt="QR Code Pix"
+                                                            className="w-64 h-64 object-contain"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+                                                            <p className="text-white text-[10px] font-black uppercase tracking-widest">Aguardando Pagamento...</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-full relative">
+                                                        <input
+                                                            readOnly
+                                                            value={generatedPixString}
+                                                            className="w-full bg-black/50 border border-white/10 rounded-lg pl-3 pr-10 py-2 text-[10px] text-gray-400 font-mono truncate focus:outline-none"
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(generatedPixString);
+                                                                alert('Pix Copiado!');
+                                                            }}
+                                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-white transition-colors"
+                                                        >
+                                                            <Copy size={16} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-4">
+                                                        <Loader2 size={12} className="text-primary animate-spin" />
+                                                        <p className="text-[10px] text-primary font-bold uppercase tracking-widest animate-pulse">
+                                                            Monitorando Aprovação...
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="text-center opacity-30">
+                                            <QrCode size={64} className="mx-auto mb-4" />
+                                            <p className="text-xs font-bold uppercase tracking-widest">Aguardando dados...</p>
                                         </div>
-                                        <div className="flex items-center gap-2 mt-4">
-                                            <Loader2 size={12} className="text-primary animate-spin" />
-                                            <p className="text-[10px] text-primary font-bold uppercase tracking-widest animate-pulse">
-                                                Monitorando Aprovação...
-                                            </p>
-                                        </div>
-                                    </>
-                                )}
-                            </>
-                        ) : (
-                            <div className="text-center opacity-30">
-                                <QrCode size={64} className="mx-auto mb-4" />
-                                <p className="text-xs font-bold uppercase tracking-widest">Aguardando dados...</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </main>
-        </div>
-    );
+                                    )}
+                                </div>
+                )}
+                            </main>
+                        </div>
+                        );
 }
 
