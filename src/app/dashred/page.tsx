@@ -10,8 +10,6 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
-import { generatePixPayload } from '@/lib/pix';
-
 interface Lead {
     id: string;
     email: string;
@@ -22,7 +20,6 @@ interface Lead {
     createdAt: Timestamp | null;
 }
 
-// Helper: Parse Price
 const parsePrice = (priceStr: string): number => {
     if (!priceStr) return 0;
     const cleanStr = priceStr.replace(/[^\d.,]/g, '');
@@ -31,7 +28,6 @@ const parsePrice = (priceStr: string): number => {
     return isNaN(val) ? 0 : val;
 };
 
-// Helper: Format Currency
 const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
@@ -39,40 +35,31 @@ const formatCurrency = (val: number) => {
     }).format(val);
 };
 
-// Helper: Calculate Expiration Days
 const getDaysRemaining = (createdAt: Timestamp | null, plan: string) => {
     if (!createdAt) return 999;
     const startDate = createdAt.toDate();
-    let durationDays = 30; // Default Monthly
-
+    let durationDays = 30;
     const p = plan?.toLowerCase() || '';
     if (p.includes('trimestral') || p.includes('3 meses')) durationDays = 90;
     else if (p.includes('semestral') || p.includes('6 meses')) durationDays = 180;
-    else if (p.includes('anual') || p.includes('1 ano') || p.includes('12 meses')) durationDays = 365;
-    else if (p.includes('vitalício') || p.includes('vitalicio')) return 9999; // Never expires
+    else if (p.includes('anual') || p.includes('1 ano')) durationDays = 365;
+    else if (p.includes('vitalício')) return 9999;
 
     const expiryDate = new Date(startDate);
     expiryDate.setDate(expiryDate.getDate() + durationDays);
-
-    const now = new Date();
-    const diffTime = expiryDate.getTime() - now.getTime();
+    const diffTime = expiryDate.getTime() - new Date().getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
 export default function AdminDashboard() {
     const SECRET_PASSWORD = 'dviela123';
-    const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 Horas em milissegundos
+    const SESSION_DURATION = 24 * 60 * 60 * 1000;
 
-    // Auth State
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState('');
     const [authChecking, setAuthChecking] = useState(true);
-
-    // Data State
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
-
-    // UI State
     const [activeTab, setActiveTab] = useState<'overview' | 'expiring' | 'pix'>('overview');
     const [searchTerm, setSearchTerm] = useState('');
     const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('all');
@@ -80,11 +67,9 @@ export default function AdminDashboard() {
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    // Renewal Modal State
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-    const [discount, setDiscount] = useState(0);
+    const [discount, setDiscount] = useState(10);
 
-    // Pix Generator State
     const [pixAmount, setPixAmount] = useState('');
     const [generatedPixString, setGeneratedPixString] = useState('');
     const [generatedPixImage, setGeneratedPixImage] = useState('');
@@ -95,45 +80,29 @@ export default function AdminDashboard() {
     const [realEmail, setRealEmail] = useState('');
     const [realPhone, setRealPhone] = useState('');
 
-    // Listener for manual Pix status
     useEffect(() => {
         if (!lastManualPixId) return;
         const unsub = onSnapshot(doc(db, "leads", lastManualPixId), (snap) => {
-            if (snap.exists() && snap.data().status === 'approved') {
-                setManualPixStatus('approved');
-            }
+            if (snap.exists() && snap.data().status === 'approved') setManualPixStatus('approved');
         });
         return () => unsub();
     }, [lastManualPixId]);
 
-    // Check Auth on Mount
     useEffect(() => {
-        const storedAuthData = localStorage.getItem('redflix_admin_session');
-        if (storedAuthData) {
+        const stored = localStorage.getItem('redflix_admin_session');
+        if (stored) {
             try {
-                const { timestamp, authenticated } = JSON.parse(storedAuthData);
-                if (authenticated && (Date.now() - timestamp < SESSION_DURATION)) {
-                    setIsAuthenticated(true);
-                } else {
-                    localStorage.removeItem('redflix_admin_session');
-                }
-            } catch (e) {
-                localStorage.removeItem('redflix_admin_session');
-            }
+                const { timestamp, authenticated } = JSON.parse(stored);
+                if (authenticated && (Date.now() - timestamp < SESSION_DURATION)) setIsAuthenticated(true);
+            } catch (e) { localStorage.removeItem('redflix_admin_session'); }
         }
         setAuthChecking(false);
     }, []);
 
-    // Firebase Listener
     useEffect(() => {
         if (!isAuthenticated) return;
-        const q = query(collection(db, "leads"), orderBy("createdAt", "desc"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
-            setLeads(data);
-            setLoading(false);
-        }, (err) => {
-            console.error("Erro Firebase:", err);
+        const unsubscribe = onSnapshot(query(collection(db, "leads"), orderBy("createdAt", "desc")), (snapshot) => {
+            setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
             setLoading(false);
         });
         return () => unsubscribe();
@@ -144,16 +113,7 @@ export default function AdminDashboard() {
         if (password === SECRET_PASSWORD) {
             setIsAuthenticated(true);
             localStorage.setItem('redflix_admin_session', JSON.stringify({ authenticated: true, timestamp: Date.now() }));
-            setPassword('');
-        } else {
-            alert('Senha Incorreta!');
-            setPassword('');
-        }
-    };
-
-    const handleLogout = () => {
-        setIsAuthenticated(false);
-        localStorage.removeItem('redflix_admin_session');
+        } else alert('Senha Incorreta!');
     };
 
     const metrics = useMemo(() => {
@@ -162,280 +122,370 @@ export default function AdminDashboard() {
         const startOfWeek = new Date(new Date(now).setDate(now.getDate() - 7));
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        const dateFiltered = leads.filter(l => {
+        const filtered = leads.filter(l => {
             if (!l.createdAt) return false;
             const d = l.createdAt.toDate();
-            if (dateFilter === 'today') return d >= startOfDay;
-            if (dateFilter === 'week') return d >= startOfWeek;
-            if (dateFilter === 'month') return d >= startOfMonth;
-            return true;
+            let passDate = true;
+            if (dateFilter === 'today') passDate = d >= startOfDay;
+            else if (dateFilter === 'week') passDate = d >= startOfWeek;
+            else if (dateFilter === 'month') passDate = d >= startOfMonth;
+
+            const passSearch = l.email.toLowerCase().includes(searchTerm.toLowerCase()) || l.phone.includes(searchTerm);
+            return passDate && passSearch;
         });
 
-        const searchFiltered = dateFiltered.filter(l =>
-            l.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            l.phone.includes(searchTerm)
-        );
-
-        const totalRevenue = searchFiltered.filter(l => l.status === 'approved').reduce((acc, curr) => acc + parsePrice(curr.price), 0);
-        const totalApproved = searchFiltered.filter(l => l.status === 'approved').length;
-        const totalLeads = searchFiltered.length;
-
-        const salesTodayCount = leads.filter(l => l.status === 'approved' && l.createdAt && l.createdAt.toDate() >= startOfDay).length;
-        const revenueToday = leads.filter(l => l.status === 'approved' && l.createdAt && l.createdAt.toDate() >= startOfDay).reduce((acc, curr) => acc + parsePrice(curr.price), 0);
-        const leadsToday = leads.filter(l => l.createdAt && l.createdAt.toDate() >= startOfDay).length;
+        const revToday = leads.filter(l => l.status === 'approved' && l.createdAt && l.createdAt.toDate() >= startOfDay).reduce((acc, curr) => acc + parsePrice(curr.price), 0);
+        const approvedCount = filtered.filter(l => l.status === 'approved').length;
 
         const planCounts: Record<string, number> = {};
-        searchFiltered.forEach(l => { if (l.status === 'approved') planCounts[l.plan] = (planCounts[l.plan] || 0) + 1; });
-        const bestSellingPlan = Object.entries(planCounts).sort((a, b) => b[1] - a[1])[0];
-
-        const expiringLeads = leads.filter(l => l.status === 'approved').sort((a, b) => getDaysRemaining(a.createdAt, a.plan) - getDaysRemaining(b.createdAt, b.plan));
+        filtered.forEach(l => { if (l.status === 'approved') planCounts[l.plan] = (planCounts[l.plan] || 0) + 1; });
+        const best = Object.entries(planCounts).sort((a, b) => b[1] - a[1])[0];
 
         return {
-            data: searchFiltered.slice(0, rowsPerPage),
-            totalFiltered: searchFiltered.length,
-            expiring: expiringLeads,
-            revenue: totalRevenue,
-            revenueToday,
-            salesToday: salesTodayCount,
-            leadsToday,
-            avgTicket: totalApproved > 0 ? totalRevenue / totalApproved : 0,
-            approved: totalApproved,
-            leads: totalLeads,
-            conversion: totalLeads > 0 ? (totalApproved / totalLeads) * 100 : 0,
-            bestPlan: bestSellingPlan ? bestSellingPlan[0] : 'N/A',
-            bestPlanCount: bestSellingPlan ? bestSellingPlan[1] : 0
+            data: filtered.slice(0, rowsPerPage),
+            revenueToday: revToday,
+            salesToday: leads.filter(l => l.status === 'approved' && l.createdAt && l.createdAt.toDate() >= startOfDay).length,
+            leadsToday: leads.filter(l => l.createdAt && l.createdAt.toDate() >= startOfDay).length,
+            conversion: filtered.length > 0 ? (approvedCount / filtered.length) * 100 : 0,
+            bestPlan: best ? best[0] : 'N/A',
+            expiring: leads.filter(l => l.status === 'approved').sort((a, b) => getDaysRemaining(a.createdAt, a.plan) - getDaysRemaining(b.createdAt, b.plan))
         };
     }, [leads, searchTerm, dateFilter, rowsPerPage]);
 
     const handleGeneratePixCode = async () => {
-        if (!pixAmount) return alert('Preencha o valor da cobrança.');
-        let targetEmail = pixType === 'real' ? realEmail : `anon.${Math.floor(Math.random() * 10000)}@redflix.com`;
-        let targetPhone = pixType === 'real' ? realPhone : '11999999999';
-        if (pixType === 'real' && (!realEmail || !realPhone)) return alert('Preencha todos os campos.');
-
-        setPixLoading(true);
-        setManualPixStatus('pending');
+        if (!pixAmount) return alert('Informe o valor.');
+        let email = pixType === 'real' ? realEmail : `anon.${Math.floor(Math.random() * 10000)}@redflix.com`;
+        if (pixType === 'real' && (!realEmail || !realPhone)) return alert('Preencha os campos.');
+        setPixLoading(true); setManualPixStatus('pending');
         try {
-            const response = await axios.post('/api/payment', { amount: pixAmount, description: `Dash - ${pixType}`, payerEmail: targetEmail });
-            const { qrcode_content, qrcode_image_url, transaction_id } = response.data;
-            if (qrcode_content) {
-                setGeneratedPixString(qrcode_content);
-                setGeneratedPixImage(qrcode_image_url);
-                const leadRef = doc(collection(db, "leads"), transaction_id);
-                const { serverTimestamp } = await import('firebase/firestore');
-                await updateDoc(leadRef, { email: targetEmail, phone: targetPhone, plan: `Dash ${pixType}`, price: pixAmount, status: 'pending', transactionId: transaction_id, createdAt: serverTimestamp() }).catch(async () => {
+            const res = await axios.post('/api/payment', { amount: pixAmount, description: 'Venda Dash', payerEmail: email });
+            if (res.data.qrcode_content) {
+                setGeneratedPixString(res.data.qrcode_content);
+                setGeneratedPixImage(res.data.qrcode_image_url);
+                setLastManualPixId(res.data.transaction_id);
+                // Sync with Firebase
+                const leadRef = doc(collection(db, "leads"), res.data.transaction_id);
+                await updateDoc(leadRef, { email, phone: realPhone || '11999999999', plan: 'Dash Pix', price: pixAmount, status: 'pending', transactionId: res.data.transaction_id, createdAt: Timestamp.now() }).catch(async () => {
                     const { setDoc } = await import('firebase/firestore');
-                    await setDoc(leadRef, { email: targetEmail, phone: targetPhone, plan: `Dash ${pixType}`, price: pixAmount, status: 'pending', transactionId: transaction_id, createdAt: serverTimestamp() });
+                    await setDoc(leadRef, { email, phone: realPhone || '11999999999', plan: 'Dash Pix', price: pixAmount, status: 'pending', transactionId: res.data.transaction_id, createdAt: Timestamp.now() });
                 });
-                setLastManualPixId(transaction_id);
             }
-        } catch (error: any) { alert(error.response?.data?.error || 'Erro ao gerar Pix.'); setManualPixStatus('none'); }
+        } catch (e) { alert('Erro ao gerar Pix.'); setManualPixStatus('none'); }
         finally { setPixLoading(false); }
     };
 
-    const toggleStatus = async (lead: Lead) => {
-        const newStatus = lead.status === 'approved' ? 'pending' : 'approved';
-        if (!confirm(`Mudar status para ${newStatus}?`)) return;
-        try {
-            await updateDoc(doc(db, "leads", lead.id), { status: newStatus });
-            if (newStatus === 'approved') {
-                await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: lead.email, plan: lead.plan, price: lead.price, status: 'approved' }) });
-            }
-        } catch (e) { alert('Erro ao atualizar Status.'); }
-    };
-
-    const deleteLead = async (id: string) => {
-        if (confirm('Deletar permanentemente?')) await deleteDoc(doc(db, "leads", id));
-    };
-
-    const generateMessage = (type: 'renew' | 'upgrade3' | 'upgrade6') => {
-        if (!selectedLead) return { direct: '', creative: '', aggressive: '', checkoutLink: '' };
-        let basePrice = type === 'renew' ? 29.9 : type === 'upgrade3' ? 79.9 : 149.9;
-        let planName = type === 'renew' ? 'Plano Mensal' : type === 'upgrade3' ? 'Plano Trimestral' : 'Plano Semestral';
-        const finalPrice = (basePrice * (1 - discount / 100)).toFixed(2).replace('.', ',');
-        const link = `${window.location.origin}/checkout/simple?plan=${encodeURIComponent(planName)}&price=${finalPrice}&leadId=${selectedLead.id}`;
+    const getProposal = (type: string) => {
+        if (!selectedLead) return { text: '', link: '' };
+        const base = type === 'monthly' ? 29.9 : type === 'trimestral' ? 79.9 : 149.9;
+        const name = type === 'monthly' ? 'Mensal' : type === 'trimestral' ? 'Trimestral' : 'Semestral';
+        const final = (base * (1 - discount / 100)).toFixed(2).replace('.', ',');
+        const link = `${window.location.origin}/checkout/simple?plan=${encodeURIComponent(name)}&price=${final}&leadId=${selectedLead.id}`;
         const days = getDaysRemaining(selectedLead.createdAt, selectedLead.plan);
-        const distxt = discount > 0 ? ` com *${discount}% OFF*` : '';
 
         return {
-            direct: `Olá! Seu plano ${selectedLead.plan} vence em ${days} dias. Renove aqui${distxt}: ${link}`,
-            creative: `Seu acesso está acabando! Garanta mais tempo com desconto${distxt}: ${link}`,
-            aggressive: `Cuidado! Corte iminente em ${days} dias. Salve seu acesso agora: ${link}`,
-            checkoutLink: link
+            direct: `Olá! Seu plano RedFlix vence em ${days} dias. Garanti um desconto de ${discount}% para sua renovação: ${link}`,
+            creative: `🎬 Opa! Sua pipoca está pronta, mas seu RedFlix está vencendo! Liberei ${discount}% OFF para você não parar a maratona: ${link}`,
+            aggressive: `⚠️ ATENÇÃO: Seu sinal RedFlix será cortado em ${days} dias. EVITE O BLOQUEIO agora com ${discount}% de desconto exclusivo: ${link}`,
+            link
         };
     };
 
-    if (authChecking) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Carregando...</div>;
+    if (authChecking) return <div className="min-h-screen bg-black flex items-center justify-center text-red-600 font-black animate-pulse">REDFLIX ADMIN...</div>;
 
-    if (!isAuthenticated) {
-        return (
-            <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6">
-                <div className="w-full max-w-md bg-[#0f0f0f] p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
-                    <h1 className="text-3xl font-black text-center text-white mb-8">REDFLIX ADMIN</h1>
-                    <form onSubmit={handleLogin} className="space-y-6">
-                        <input type="password" placeholder="SENHA" className="w-full bg-black/50 border border-white/10 p-5 rounded-2xl text-white text-center" value={password} onChange={(e) => setPassword(e.target.value)} />
-                        <button className="w-full bg-primary py-5 rounded-2xl text-white font-black">ENTRAR</button>
-                    </form>
+    if (!isAuthenticated) return (
+        <div className="min-h-screen bg-black flex items-center justify-center p-6 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black to-black">
+            <div className="w-full max-w-md bg-[#0a0a0a] p-10 rounded-3xl border border-white/5 shadow-[0_0_50px_rgba(220,38,38,0.15)]">
+                <div className="text-center mb-8">
+                    <Shield className="text-red-600 mx-auto mb-4" size={48} />
+                    <h1 className="text-3xl font-black italic text-white tracking-tighter">REDFLIX <span className="text-red-600">ADMIN</span></h1>
                 </div>
+                <form onSubmit={handleLogin} className="space-y-4">
+                    <input type="password" placeholder="SENHA MESTRA" className="w-full bg-black border border-white/10 p-4 rounded-xl text-white text-center font-bold tracking-widest focus:border-red-600 outline-none transition-all" value={password} onChange={e => setPassword(e.target.value)} />
+                    <button className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-red-600/20">ACESSAR SISTEMA</button>
+                </form>
             </div>
-        );
-    }
+        </div>
+    );
 
     return (
         <div className="h-[100dvh] md:h-screen bg-[#020202] text-white font-sans flex overflow-hidden">
-            <aside className={`fixed md:relative inset-y-0 left-0 z-[70] transition-all bg-[#050505] border-r border-white/5 ${isSidebarOpen ? 'w-64' : 'w-20 md:w-20 lg:w-64'}`}>
-                <div className="p-6 font-black italic text-xl">REDFLIX</div>
-                <nav className="mt-8 px-4 space-y-2">
-                    <button onClick={() => setActiveTab('overview')} className={`w-full flex items-center gap-4 p-4 rounded-xl ${activeTab === 'overview' ? 'bg-primary/10 text-primary' : 'text-gray-500'}`}><TrendingUp size={20} /><span className="hidden lg:block text-xs font-bold uppercase">Dashboard</span></button>
-                    <button onClick={() => setActiveTab('expiring')} className={`w-full flex items-center gap-4 p-4 rounded-xl ${activeTab === 'expiring' ? 'bg-primary/10 text-primary' : 'text-gray-500'}`}><Clock size={20} /><span className="hidden lg:block text-xs font-bold uppercase">Renovações</span></button>
-                    <button onClick={() => setActiveTab('pix')} className={`w-full flex items-center gap-4 p-4 rounded-xl ${activeTab === 'pix' ? 'bg-primary/10 text-primary' : 'text-gray-500'}`}><QrCode size={20} /><span className="hidden lg:block text-xs font-bold uppercase">Gerador Pix</span></button>
+            {/* Sidebar Premium */}
+            <aside className={`fixed md:relative inset-y-0 left-0 z-[70] transition-all duration-300 bg-[#050505] border-r border-white/5 ${isSidebarOpen ? 'w-64' : 'w-20 md:w-20 lg:w-64'}`}>
+                <div className="p-6 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/40">
+                        <Star className="text-white" size={20} />
+                    </div>
+                    <span className={`font-black italic text-xl tracking-tighter ${isSidebarOpen ? 'block' : 'hidden lg:block'}`}>REDFLIX</span>
+                </div>
+                <nav className="mt-10 px-4 space-y-2">
+                    {[
+                        { id: 'overview', icon: TrendingUp, label: 'Dashboard' },
+                        { id: 'expiring', icon: Clock, label: 'Renovações' },
+                        { id: 'pix', icon: QrCode, label: 'Gerador Pix' }
+                    ].map(item => (
+                        <button key={item.id} onClick={() => setActiveTab(item.id as any)} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === item.id ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
+                            <item.icon size={20} />
+                            <span className={`text-xs font-black uppercase tracking-widest ${isSidebarOpen ? 'block' : 'hidden lg:block'}`}>{item.label}</span>
+                        </button>
+                    ))}
                 </nav>
-                <div className="absolute bottom-4 left-4 right-4"><button onClick={handleLogout} className="w-full flex items-center gap-4 p-4 text-gray-500 hover:text-red-500"><LogOut size={20} /><span className="hidden lg:block text-xs font-bold uppercase">Sair</span></button></div>
+                <div className="absolute bottom-6 left-4 right-4">
+                    <button onClick={() => { localStorage.removeItem('redflix_admin_session'); window.location.reload(); }} className="w-full flex items-center gap-4 p-4 text-gray-500 hover:text-red-500 transition-colors">
+                        <LogOut size={20} />
+                        <span className={`text-xs font-black uppercase tracking-widest ${isSidebarOpen ? 'block' : 'hidden lg:block'}`}>Sair</span>
+                    </button>
+                </div>
             </aside>
 
-            <main className="flex-1 overflow-y-auto relative pt-16 md:pt-0">
-                <header className="md:hidden fixed top-0 w-full bg-black/90 p-4 flex justify-between items-center z-50">
-                    <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}><Menu size={24} /></button>
-                    <span className="font-black italic">REDFLIX</span>
-                    <button onClick={handleLogout}><LogOut size={20} /></button>
+            <main className="flex-1 overflow-y-auto relative pt-16 md:pt-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-red-900/5 via-transparent to-transparent">
+                {/* Mobile Header */}
+                <header className="md:hidden fixed top-0 w-full bg-black/80 backdrop-blur-lg p-4 flex justify-between items-center z-50 border-b border-white/5">
+                    <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2"><Menu size={24} /></button>
+                    <span className="font-black italic tracking-tighter">REDFLIX</span>
+                    <div className="w-10" />
                 </header>
 
-                {activeTab === 'overview' && (
-                    <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-2xl font-black italic">Visão Geral</h2>
-                            <div className="flex gap-2">
-                                {['today', 'week', 'month', 'all'].map(f => (
-                                    <button key={f} onClick={() => setDateFilter(f as any)} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase border ${dateFilter === f ? 'bg-white text-black' : 'border-white/10 text-gray-500'}`}>{f}</button>
+                <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
+                    {activeTab === 'overview' && (
+                        <>
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                                <div>
+                                    <h2 className="text-3xl font-black italic text-white tracking-tighter uppercase">Painel de <span className="text-red-600">Controle</span></h2>
+                                    <p className="text-xs text-gray-500 mt-1 font-medium tracking-wide">Monitoramento em tempo real da sua operação.</p>
+                                </div>
+                                <div className="flex bg-[#0a0a0a] p-1 rounded-xl border border-white/5">
+                                    {['today', 'week', 'month', 'all'].map(f => (
+                                        <button key={f} onClick={() => setDateFilter(f as any)} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${dateFilter === f ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-white'}`}>{f}</button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* KPI Grid Premium */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {[
+                                    { label: 'Faturamento Hoje', value: formatCurrency(metrics.revenueToday), sub: `${metrics.salesToday} vendas aprovadas`, icon: DollarSign, color: 'from-red-600 to-red-900' },
+                                    { label: 'Novos Leads', value: metrics.leadsToday, sub: 'Visitantes no checkout', icon: Users, color: 'from-orange-600 to-red-600' },
+                                    { label: 'Conversão', value: `${metrics.conversion.toFixed(1)}%`, sub: 'Taxa de aprovação', icon: Percent, color: 'from-red-600 to-pink-600' },
+                                    { label: 'Plano Campeão', value: metrics.bestPlan, sub: 'O mais vendido do período', icon: Star, color: 'from-red-600 to-black' }
+                                ].map((kpi, i) => (
+                                    <div key={i} className="relative group">
+                                        <div className={`absolute -inset-0.5 bg-gradient-to-r ${kpi.color} rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500`}></div>
+                                        <div className="relative bg-[#0a0a0a] p-8 rounded-3xl border border-white/5 space-y-4">
+                                            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${kpi.color} flex items-center justify-center shadow-lg`}>
+                                                <kpi.icon size={20} className="text-white" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">{kpi.label}</h3>
+                                                <p className="text-3xl font-black text-white italic tracking-tighter mt-1">{kpi.value}</p>
+                                                <p className="text-[9px] text-gray-600 font-bold uppercase mt-2">{kpi.sub}</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5">
-                                <h3 className="text-[10px] font-bold text-gray-500 uppercase">Faturamento Hoje</h3>
-                                <p className="text-2xl font-black mt-1">{formatCurrency(metrics.revenueToday)}</p>
-                            </div>
-                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5">
-                                <h3 className="text-[10px] font-bold text-gray-500 uppercase">Vendas Hoje</h3>
-                                <p className="text-2xl font-black mt-1">{metrics.salesToday}</p>
-                            </div>
-                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5">
-                                <h3 className="text-[10px] font-bold text-gray-500 uppercase">Leads Hoje</h3>
-                                <p className="text-2xl font-black mt-1">{metrics.leadsToday}</p>
-                            </div>
-                            <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5">
-                                <h3 className="text-[10px] font-bold text-gray-500 uppercase">Conversão</h3>
-                                <p className="text-2xl font-black mt-1">{metrics.conversion.toFixed(1)}%</p>
-                            </div>
-                        </div>
-
-                        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
-                            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
-                                <h3 className="font-bold">Últimas Transações</h3>
-                                <input type="text" placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-xs" />
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead className="bg-white/[0.02] text-[9px] uppercase text-gray-500">
-                                        <tr><th className="px-6 py-4">Cliente</th><th className="px-6 py-4">Plano</th><th className="px-6 py-4">Valor</th><th className="px-6 py-4">Status</th><th className="px-6 py-4">Ações</th></tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5 text-xs">
-                                        {metrics.data.map(lead => (
-                                            <tr key={lead.id} className="hover:bg-white/[0.01]">
-                                                <td className="px-6 py-4 font-bold">{lead.email}</td>
-                                                <td className="px-6 py-4">{lead.plan}</td>
-                                                <td className="px-6 py-4">{formatCurrency(parsePrice(lead.price))}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${lead.status === 'approved' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'}`}>{lead.status}</span>
-                                                </td>
-                                                <td className="px-6 py-4 flex gap-2">
-                                                    <button onClick={() => toggleStatus(lead)} className="p-2 bg-white/5 rounded hover:bg-white/10"><CheckCircle2 size={14} /></button>
-                                                    <button onClick={() => deleteLead(lead.id)} className="p-2 bg-white/5 rounded hover:bg-red-500/20"><Trash2 size={14} /></button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'expiring' && (
-                    <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
-                        <h2 className="text-2xl font-black italic">Gestão de Renovações</h2>
-                        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
-                            <table className="w-full text-left">
-                                <thead className="bg-white/[0.02] text-[9px] uppercase text-gray-500">
-                                    <tr><th className="px-6 py-4">Cliente</th><th className="px-6 py-4">Vencimento</th><th className="px-6 py-4">Ação</th></tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5 text-xs">
-                                    {metrics.expiring.map(lead => {
-                                        const days = getDaysRemaining(lead.createdAt, lead.plan);
-                                        return (
-                                            <tr key={lead.id}>
-                                                <td className="px-6 py-4 font-bold">{lead.email}</td>
-                                                <td className="px-6 py-4"><span className={days <= 7 ? 'text-red-500 font-bold' : ''}>{days} dias</span></td>
-                                                <td className="px-6 py-4">
-                                                    <button onClick={() => setSelectedLead(lead)} className="bg-green-600/10 text-green-500 px-4 py-2 rounded-lg font-black uppercase text-[10px]">Enviar Proposta</button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                        {selectedLead && (
-                            <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
-                                <div className="bg-[#0f0f0f] border border-white/10 rounded-2xl p-6 max-w-md w-full">
-                                    <div className="flex justify-between mb-6"><h3>Enviar Proposta</h3><button onClick={() => setSelectedLead(null)}><X /></button></div>
-                                    <div className="space-y-4">
-                                        {['renew', 'upgrade3', 'upgrade6'].map(t => {
-                                            const m = generateMessage(t as any);
-                                            return (
-                                                <div key={t} className="bg-white/5 p-4 rounded-xl space-y-3">
-                                                    <p className="text-[10px] font-black uppercase text-gray-500">{t}</p>
-                                                    <div className="flex gap-2">
-                                                        <a href={`https://wa.me/${selectedLead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(m.direct)}`} target="_blank" className="flex-1 bg-green-600 text-center py-2 rounded text-[10px] font-black">WHATSAPP</a>
-                                                        <button onClick={() => { navigator.clipboard.writeText(m.checkoutLink); alert('Copiado!'); }} className="bg-white/10 px-4 py-2 rounded text-[10px]">Copiad</button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                            {/* Table Premium */}
+                            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+                                <div className="p-8 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 bg-gradient-to-r from-red-600/5 to-transparent">
+                                    <h3 className="text-lg font-black italic tracking-tighter">ÚLTIMAS TRANSAÇÕES</h3>
+                                    <div className="relative w-full md:w-80">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                                        <input type="text" placeholder="BUSCAR POR EMAIL OU WHATSAPP..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[10px] font-black focus:border-red-600 outline-none transition-all placeholder:opacity-30" />
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'pix' && (
-                    <div className="p-4 md:p-8 space-y-8 max-w-2xl mx-auto">
-                        <h2 className="text-2xl font-black italic">Gerador de Pix</h2>
-                        <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-3xl space-y-6">
-                            <div className="flex gap-2 p-1 bg-black rounded-xl">
-                                <button onClick={() => setPixType('anon')} className={`flex-1 py-2 rounded-lg text-[10px] font-black ${pixType === 'anon' ? 'bg-primary' : ''}`}>ANÔNIMO</button>
-                                <button onClick={() => setPixType('real')} className={`flex-1 py-2 rounded-lg text-[10px] font-black ${pixType === 'real' ? 'bg-white text-black' : ''}`}>REAL</button>
-                            </div>
-                            {pixType === 'real' && (
-                                <div className="space-y-4">
-                                    <input type="email" placeholder="Email" value={realEmail} onChange={e => setRealEmail(e.target.value)} className="w-full bg-black border border-white/10 p-3 rounded-xl" />
-                                    <input type="text" placeholder="WhatsApp" value={realPhone} onChange={e => setRealPhone(e.target.value)} className="w-full bg-black border border-white/10 p-3 rounded-xl" />
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-[#050505] text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 border-b border-white/5">
+                                            <tr>
+                                                <th className="px-8 py-5">Cliente</th>
+                                                <th className="px-8 py-5">Plano / Valor</th>
+                                                <th className="px-8 py-5 text-center">Status</th>
+                                                <th className="px-8 py-5 text-right">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {metrics.data.map(lead => (
+                                                <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
+                                                    <td className="px-8 py-6">
+                                                        <div className="text-xs font-black text-white">{lead.email}</div>
+                                                        <div className="text-[10px] text-gray-600 font-bold mt-1 tracking-wider">{lead.phone}</div>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="bg-red-600/10 text-red-500 border border-red-600/20 px-2 py-0.5 rounded text-[9px] font-black uppercase">{lead.plan}</span>
+                                                            <span className="text-xs font-black text-gray-300">{formatCurrency(parsePrice(lead.price))}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6 text-center">
+                                                        <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${lead.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'}`}>{lead.status === 'approved' ? 'Aprovado' : 'Pendente'}</span>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex justify-end gap-3 translate-x-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
+                                                            <button onClick={() => updateDoc(doc(db, "leads", lead.id), { status: lead.status === 'approved' ? 'pending' : 'approved' })} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5"><CheckCircle2 size={16} className="text-green-500" /></button>
+                                                            <button onClick={() => deleteLead(lead.id)} className="p-2.5 bg-red-600/10 hover:bg-red-600 rounded-xl transition-all border border-red-600/20 group/del"><Trash2 size={16} className="text-red-500 group-hover/del:text-white" /></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            )}
-                            <input type="text" placeholder="Valor (ex: 29,90)" value={pixAmount} onChange={e => setPixAmount(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl text-3xl font-black" />
-                            <button onClick={handleGeneratePixCode} disabled={pixLoading} className="w-full bg-primary py-4 rounded-xl font-black">GERAR PIX</button>
-                            {generatedPixString && (
-                                <div className="text-center space-y-4">
-                                    <img src={generatedPixImage} className="mx-auto w-48 h-48 bg-white p-2 rounded-xl" />
-                                    <button onClick={() => { navigator.clipboard.writeText(generatedPixString); alert('Copiado!'); }} className="text-primary font-bold">COPIAR PIX</button>
-                                    {manualPixStatus === 'approved' && <div className="text-green-500 font-black">PAGAMENTO APROVADO!</div>}
+                            </div>
+                        </>
+                    )}
+
+                    {activeTab === 'expiring' && (
+                        <div className="space-y-10">
+                            <div>
+                                <h2 className="text-3xl font-black italic tracking-tighter uppercase underline decoration-red-600 decoration-4 underline-offset-8">Recuperação de <span className="text-red-600">Vendas</span></h2>
+                                <p className="text-xs text-gray-500 mt-4 max-w-2xl font-medium">Clientes com assinatura expirando. Envie propostas personalizadas para garantir a retenção.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {metrics.expiring.map(lead => {
+                                    const days = getDaysRemaining(lead.createdAt, lead.plan);
+                                    const isUrgent = days <= 5;
+                                    return (
+                                        <div key={lead.id} className={`bg-[#0a0a0a] p-8 rounded-3xl border-l-8 transition-all hover:scale-[1.02] ${isUrgent ? 'border-red-600' : 'border-green-600'} border-y border-r border-white/5 space-y-6`}>
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="text-xs font-black text-white truncate max-w-[150px]">{lead.email}</div>
+                                                    <div className="text-[10px] text-gray-600 font-bold mt-1 uppercase tracking-widest">{lead.plan}</div>
+                                                </div>
+                                                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${isUrgent ? 'bg-red-600 text-white' : 'bg-green-600/10 text-green-500'}`}>{days} DIAS</div>
+                                            </div>
+                                            <div className="h-0.5 bg-white/5 w-full"></div>
+                                            <button onClick={() => { setSelectedLead(lead); setDiscount(10); }} className="w-full bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-red-600 hover:text-white transition-all shadow-xl">
+                                                <Smartphone size={18} />
+                                                ENVIAR PROPOSTA
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Modal de Proposta Premium */}
+                            {selectedLead && (
+                                <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
+                                    <div className="bg-[#0f0f0f] border border-red-600/20 rounded-[2.5rem] p-10 max-w-2xl w-full shadow-[0_0_100px_rgba(220,38,38,0.1)] relative">
+                                        <button onClick={() => setSelectedLead(null)} className="absolute top-8 right-8 text-gray-500 hover:text-white transition-colors"><X size={32} /></button>
+
+                                        <div className="mb-10 text-center">
+                                            <div className="inline-block p-1 rounded-2xl bg-gradient-to-r from-red-600 to-transparent mb-6">
+                                                <div className="bg-[#0f0f0f] px-6 py-2 rounded-xl text-[10px] font-black text-red-500 uppercase tracking-[0.3em]">RENOVAÇÃO VIP</div>
+                                            </div>
+                                            <h3 className="text-3xl font-black italic tracking-tighter text-white">OFERTA PARA <span className="text-red-600 break-all">{selectedLead.email}</span></h3>
+                                        </div>
+
+                                        {/* Slider de Desconto Premium */}
+                                        <div className="bg-white/5 p-8 rounded-3xl border border-white/5 mb-8">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2"><Percent size={14} className="text-red-600" /> SELECIONAR DESCONTO</span>
+                                                <span className="text-3xl font-black text-red-600 italic tracking-tighter animate-pulse">{discount}% OFF</span>
+                                            </div>
+                                            <input type="range" min="5" max="50" step="5" value={discount} onChange={e => setDiscount(parseInt(e.target.value))} className="w-full h-3 bg-black rounded-full appearance-none cursor-pointer accent-red-600" />
+                                            <div className="flex justify-between text-[8px] font-black text-gray-700 mt-4 tracking-[0.2em]"><span>5% (PADRÃO)</span><span>25% (MÉDIO)</span><span>50% (MÁXIMO)</span></div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-6">
+                                            {['monthly', 'trimestral', 'semestral'].map(t => {
+                                                const p = getProposal(t);
+                                                return (
+                                                    <div key={t} className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 flex flex-col md:flex-row gap-6 items-center group hover:bg-white/[0.04] transition-all">
+                                                        <div className="flex-1 space-y-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="p-2 bg-red-600/10 rounded-xl text-red-600"><Star size={18} /></span>
+                                                                <span className="text-xs font-black uppercase tracking-widest text-white">{t === 'monthly' ? 'Renovação Mensal' : t === 'trimestral' ? 'Upgrade Trimestral' : 'Fidelização Semestral'}</span>
+                                                            </div>
+                                                            {/* Preview de Mensagem */}
+                                                            <div className="bg-black/50 p-4 rounded-xl border border-white/5 relative h-24 overflow-y-auto scrollbar-hide">
+                                                                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1 opacity-50"><Smartphone size={10} /> Prévia WhatsApp:</p>
+                                                                <p className="text-[10px] text-gray-300 leading-relaxed font-medium italic">"{p.creative}"</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2 w-full md:w-44">
+                                                            <a href={`https://wa.me/${selectedLead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(p.creative)}`} target="_blank" className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl text-center text-[10px] font-black flex items-center justify-center gap-2 shadow-lg shadow-green-600/20">
+                                                                <Smartphone size={14} /> WHATSAPP
+                                                            </a>
+                                                            <button onClick={() => { navigator.clipboard.writeText(p.link); alert('LInk Copiado!'); }} className="w-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white py-2 rounded-xl text-[9px] font-black transition-all">COPIAR LINK</button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
-                    </div>
-                )}
+                    )}
+
+                    {activeTab === 'pix' && (
+                        <div className="space-y-10">
+                            <div className="text-center md:text-left">
+                                <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white">Gerador de <span className="text-red-600">Cobranças</span></h2>
+                                <p className="text-xs text-gray-500 mt-2 font-medium">Capture vendas offline gerando Pix manuais instantaneamente.</p>
+                            </div>
+
+                            <div className="max-w-4xl mx-auto bg-[#0a0a0a] border border-white/5 rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row">
+                                <div className="flex-1 p-10 space-y-8 border-r border-white/5">
+                                    <div className="flex bg-black p-1.5 rounded-2xl border border-white/5">
+                                        <button onClick={() => setPixType('anon')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${pixType === 'anon' ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-white'}`}>Anônimo</button>
+                                        <button onClick={() => setPixType('real')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${pixType === 'real' ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}>Dados Reais</button>
+                                    </div>
+
+                                    {pixType === 'real' && (
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <input type="email" placeholder="EMAIL DO CLIENTE" value={realEmail} onChange={e => setRealEmail(e.target.value)} className="w-full bg-black border border-white/10 p-5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-red-600 outline-none text-white" />
+                                            <input type="text" placeholder="WHATSAPP (DDD + NÚMERO)" value={realPhone} onChange={e => setRealPhone(e.target.value)} className="w-full bg-black border border-white/10 p-5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-red-600 outline-none text-white" />
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 block">VALOR DA COBRANÇA (R$)</label>
+                                        <input type="text" placeholder="EX: 29,90" value={pixAmount} onChange={e => setPixAmount(e.target.value)} className="w-full bg-black border border-white/10 p-8 rounded-3xl text-5xl font-black text-white italic tracking-tighter focus:border-red-600 outline-none placeholder:opacity-20" />
+                                    </div>
+
+                                    <button onClick={handleGeneratePixCode} disabled={pixLoading} className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-4 transition-all shadow-xl shadow-red-600/30 disabled:opacity-50 text-base italic tracking-tighter">
+                                        {pixLoading ? <Loader2 className="animate-spin" /> : <><QrCode size={24} /> GERAR COBRANÇA AGORA</>}
+                                    </button>
+                                </div>
+
+                                <div className="w-full md:w-[350px] bg-white/[0.02] p-10 flex flex-col items-center justify-center space-y-8 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-40 h-40 bg-red-600/10 blur-[60px] rounded-full" />
+                                    <div className="absolute bottom-0 left-0 w-40 h-40 bg-red-600/10 blur-[60px] rounded-full" />
+
+                                    {!generatedPixString ? (
+                                        <div className="text-center opacity-30 space-y-4">
+                                            <QrCode size={100} className="mx-auto text-gray-500" />
+                                            <p className="text-[10px] font-black uppercase tracking-[0.3em]">Aguardando Dados...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="w-full text-center space-y-8 animate-in zoom-in duration-500">
+                                            <div className="bg-white p-6 rounded-[2rem] shadow-2xl relative group">
+                                                <img src={generatedPixImage} className="w-full h-auto rounded-xl" />
+                                                <div className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[2rem]">
+                                                    <p className="text-white text-[10px] font-black uppercase tracking-widest px-4">{manualPixStatus === 'approved' ? 'PAGAMENTO APROVADO!' : 'MONITORANDO...'}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <button onClick={() => { navigator.clipboard.writeText(generatedPixString); alert('Pix Copiado!'); }} className="w-full bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-all">
+                                                    <Copy size={18} /> COPIAR CÓDIGO
+                                                </button>
+                                                {manualPixStatus === 'approved' && (
+                                                    <div className="flex items-center gap-3 justify-center text-green-500 animate-bounce">
+                                                        <CheckCircle2 size={24} />
+                                                        <span className="font-black italic text-xl uppercase tracking-tighter">RECEBIDO!</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </main>
         </div>
     );
