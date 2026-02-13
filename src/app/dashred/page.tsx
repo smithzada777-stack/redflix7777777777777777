@@ -262,6 +262,18 @@ export default function AdminDashboard() {
         await deleteDoc(doc(db, "leads", id));
     };
 
+    const deleteSelectedLeads = async () => {
+        if (selectedLeads.length === 0) return;
+        if (!confirm(`Tem certeza que deseja excluir ${selectedLeads.length} itens?`)) return;
+        try {
+            const promises = selectedLeads.map(id => deleteDoc(doc(db, "leads", id)));
+            await Promise.all(promises);
+            setSelectedLeads([]);
+        } catch (error) {
+            alert('Erro ao excluir itens selecionados.');
+        }
+    };
+
     if (authChecking || ipChecking) return (
         <div className="min-h-screen bg-black flex flex-col items-center justify-center space-y-4">
             <Loader2 className="text-red-600 animate-spin" size={48} />
@@ -414,9 +426,19 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Table Premium */}
-                            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+                            <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all">
                                 <div className="p-8 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 bg-gradient-to-r from-red-600/5 to-transparent">
-                                    <h3 className="text-lg font-black italic tracking-tighter">ÚLTIMAS TRANSAÇÕES</h3>
+                                    <div className="flex items-center gap-4">
+                                        <h3 className="text-lg font-black italic tracking-tighter uppercase">Últimas Transações</h3>
+                                        {selectedLeads.length > 0 && (
+                                            <button
+                                                onClick={deleteSelectedLeads}
+                                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 animate-in slide-in-from-left-4 duration-300"
+                                            >
+                                                <Trash2 size={14} /> EXCLUIR ({selectedLeads.length})
+                                            </button>
+                                        )}
+                                    </div>
                                     <div className="relative w-full md:w-80">
                                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                                         <input type="text" placeholder="BUSCAR POR EMAIL OU WHATSAPP..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[10px] font-black focus:border-red-600 outline-none transition-all placeholder:opacity-30" />
@@ -426,6 +448,17 @@ export default function AdminDashboard() {
                                     <table className="w-full text-left">
                                         <thead className="bg-[#050505] text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 border-b border-white/5">
                                             <tr>
+                                                <th className="px-8 py-5 w-10">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 rounded border-white/10 bg-black accent-red-600 cursor-pointer"
+                                                        checked={selectedLeads.length === metrics.data.length && metrics.data.length > 0}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) setSelectedLeads(metrics.data.map(l => l.id));
+                                                            else setSelectedLeads([]);
+                                                        }}
+                                                    />
+                                                </th>
                                                 <th className="px-8 py-5">Cliente</th>
                                                 <th className="px-8 py-5">Plano / Valor</th>
                                                 <th className="px-8 py-5 text-center">Status</th>
@@ -434,7 +467,18 @@ export default function AdminDashboard() {
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
                                             {metrics.data.map(lead => (
-                                                <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
+                                                <tr key={lead.id} className={`hover:bg-white/[0.02] transition-colors group ${selectedLeads.includes(lead.id) ? 'bg-red-600/5' : ''}`}>
+                                                    <td className="px-8 py-6">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="w-4 h-4 rounded border-white/10 bg-black accent-red-600 cursor-pointer"
+                                                            checked={selectedLeads.includes(lead.id)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) setSelectedLeads([...selectedLeads, lead.id]);
+                                                                else setSelectedLeads(selectedLeads.filter(id => id !== lead.id));
+                                                            }}
+                                                        />
+                                                    </td>
                                                     <td className="px-8 py-6">
                                                         <div className="text-xs font-black text-white">{lead.email}</div>
                                                         <div className="text-[10px] text-gray-600 font-bold mt-1 tracking-wider">{lead.phone}</div>
