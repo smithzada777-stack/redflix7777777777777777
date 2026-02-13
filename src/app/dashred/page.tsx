@@ -12,7 +12,7 @@ import {
 import { collection, query, orderBy, onSnapshot, Timestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import {
     Users, Phone, Mail, Clock, Shield, Search, LogOut, CheckCircle2,
-    AlertCircle, DollarSign, TrendingUp, BarChart3, Star,
+    AlertCircle, DollarSign, TrendingUp, BarChart3, Star, MessageCircle,
     MoreVertical, FileText, Trash2, Smartphone, Send, Calendar, Percent, QrCode, Copy, Loader2, Menu, X, Lock
 } from 'lucide-react';
 import axios from 'axios';
@@ -389,23 +389,24 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* KPI Grid Premium */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                                 {[
-                                    { label: 'Faturamento Hoje', value: formatCurrency(metrics.revenueToday), sub: `${metrics.salesToday} vendas aprovadas`, icon: DollarSign, color: 'from-red-600 to-red-900' },
-                                    { label: 'Novos Leads', value: metrics.leadsToday, sub: 'Visitantes no checkout', icon: Users, color: 'from-orange-600 to-red-600' },
-                                    { label: 'Conversão', value: `${metrics.conversion.toFixed(1)}%`, sub: 'Taxa de aprovação', icon: Percent, color: 'from-red-600 to-pink-600' },
-                                    { label: 'Plano Campeão', value: metrics.bestPlan, sub: 'O mais vendido do período', icon: Star, color: 'from-red-600 to-black' }
+                                    { label: 'Hoje', value: formatCurrency(metrics.revenueToday), sub: `${metrics.salesToday} vendas`, icon: DollarSign, color: 'from-red-600 to-red-900' },
+                                    { label: 'Leads', value: metrics.leadsToday, sub: 'Visitantes', icon: Users, color: 'from-orange-600 to-red-600' },
+                                    { label: 'Conversão', value: `${metrics.conversion.toFixed(1)}%`, sub: 'Taxa AP', icon: Percent, color: 'from-red-600 to-pink-600' },
+                                    { label: 'Top Plano', value: metrics.bestPlan, sub: 'Lidêr vendas', icon: Star, color: 'from-red-600 to-black' }
                                 ].map((kpi, i) => (
                                     <div key={i} className="relative group">
-                                        <div className={`absolute -inset-0.5 bg-gradient-to-r ${kpi.color} rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500`}></div>
-                                        <div className="relative bg-[#0a0a0a] p-8 rounded-3xl border border-white/5 space-y-4">
-                                            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${kpi.color} flex items-center justify-center shadow-lg`}>
-                                                <kpi.icon size={20} className="text-white" />
+                                        <div className={`absolute -inset-0.5 bg-gradient-to-r ${kpi.color} rounded-2xl blur opacity-10 group-hover:opacity-30 transition duration-500`}></div>
+                                        <div className="relative bg-[#0a0a0a] p-4 md:p-8 rounded-2xl md:rounded-3xl border border-white/5 space-y-3 md:space-y-4">
+                                            <div className={`w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-2xl bg-gradient-to-br ${kpi.color} flex items-center justify-center shadow-lg`}>
+                                                <kpi.icon size={16} className="text-white md:hidden" />
+                                                <kpi.icon size={20} className="text-white hidden md:block" />
                                             </div>
                                             <div>
-                                                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">{kpi.label}</h3>
-                                                <p className="text-3xl font-black text-white italic tracking-tighter mt-1">{kpi.value}</p>
-                                                <p className="text-[9px] text-gray-600 font-bold uppercase mt-2">{kpi.sub}</p>
+                                                <h3 className="text-[8px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest">{kpi.label}</h3>
+                                                <p className="text-lg md:text-3xl font-black text-white italic tracking-tighter mt-1">{kpi.value}</p>
+                                                <p className="text-[7px] md:text-[9px] text-gray-600 font-bold uppercase mt-1 md:mt-2">{kpi.sub}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -448,7 +449,8 @@ export default function AdminDashboard() {
                                                         <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${lead.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'}`}>{lead.status === 'approved' ? 'Aprovado' : 'Pendente'}</span>
                                                     </td>
                                                     <td className="px-8 py-6">
-                                                        <div className="flex justify-end gap-3 translate-x-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
+                                                        <div className="flex justify-end gap-3 md:translate-x-4 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-x-0 transition-all">
+                                                            <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="p-2.5 bg-green-600/10 hover:bg-green-600/20 rounded-xl transition-all border border-green-600/20"><MessageCircle size={16} className="text-green-500" /></a>
                                                             <button onClick={() => updateDoc(doc(db, "leads", lead.id), { status: lead.status === 'approved' ? 'pending' : 'approved' })} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5"><CheckCircle2 size={16} className="text-green-500" /></button>
                                                             <button onClick={() => deleteLead(lead.id)} className="p-2.5 bg-red-600/10 hover:bg-red-600 rounded-xl transition-all border border-red-600/20 group/del"><Trash2 size={16} className="text-red-500 group-hover/del:text-white" /></button>
                                                         </div>
@@ -483,10 +485,15 @@ export default function AdminDashboard() {
                                                 <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${isUrgent ? 'bg-red-600 text-white' : 'bg-green-600/10 text-green-500'}`}>{days} DIAS</div>
                                             </div>
                                             <div className="h-0.5 bg-white/5 w-full"></div>
-                                            <button onClick={() => { setSelectedLead(lead); setDiscount(10); }} className="w-full bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-red-600 hover:text-white transition-all shadow-xl">
-                                                <Smartphone size={18} />
-                                                ENVIAR PROPOSTA
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="p-4 bg-green-600/10 hover:bg-green-600 text-green-500 hover:text-white rounded-2xl transition-all border border-green-600/20 group">
+                                                    <MessageCircle size={20} />
+                                                </a>
+                                                <button onClick={() => { setSelectedLead(lead); setDiscount(10); }} className="flex-1 bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-red-600 hover:text-white transition-all shadow-xl">
+                                                    <Smartphone size={18} />
+                                                    PROPOSTA
+                                                </button>
+                                            </div>
                                         </div>
                                     );
                                 })}
