@@ -121,7 +121,7 @@ export async function sendEmail({ email, plan, price, status, pixCode }: { email
     try {
         console.log("Enviando e-mail para:", email);
         const data = await resend.emails.send({
-            from: 'RedFlix <avisos@suporte.redflixoficial.site>',
+            from: 'RedFlix <suporte@redflixoficial.site>',
             to: [email],
             subject: subject,
             html: getEmailHtml(innerContent),
