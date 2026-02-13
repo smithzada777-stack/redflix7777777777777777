@@ -61,10 +61,10 @@ const getDaysRemaining = (createdAt: Timestamp | null, plan: string) => {
 export default function AdminDashboard() {
     // --- Security Config ---
     const ALLOWED_IP = process.env.NEXT_PUBLIC_ALLOWED_IP; // Configure no .env.local
-    const MAX_SESSION_DAYS = 7;
+    const SECRET_PASSWORD = 'dviela123'; // Sua senha mestra
+    const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 dias em ms
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [userEmail, setUserEmail] = useState('');
     const [password, setPassword] = useState('');
     const [authChecking, setAuthChecking] = useState(true);
     const [ipChecking, setIpChecking] = useState(true);
@@ -118,49 +118,39 @@ export default function AdminDashboard() {
         checkIp();
     }, [ALLOWED_IP]);
 
-    // 2. Monitoramento de Autenticação Firebase
+    // 2. Monitoramento de Sessão (Simples e Eficaz)
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Verificar se a sessão expirou (1 semana)
-                const lastSignIn = user.metadata.lastSignInTime;
-                if (lastSignIn) {
-                    const lastSignInDate = new Date(lastSignIn);
-                    const diffDays = (Date.now() - lastSignInDate.getTime()) / (1000 * 60 * 60 * 24);
-
-                    if (diffDays > MAX_SESSION_DAYS) {
-                        signOut(auth);
-                        setIsAuthenticated(false);
-                    } else {
-                        setIsAuthenticated(true);
-                    }
+        const stored = localStorage.getItem('redflix_admin_session');
+        if (stored) {
+            try {
+                const { timestamp, authenticated } = JSON.parse(stored);
+                if (authenticated && (Date.now() - timestamp < SESSION_DURATION)) {
+                    setIsAuthenticated(true);
+                } else {
+                    localStorage.removeItem('redflix_admin_session');
                 }
-            } else {
-                setIsAuthenticated(false);
-            }
-            setAuthChecking(false);
-        });
-        return () => unsubscribe();
+            } catch (e) { localStorage.removeItem('redflix_admin_session'); }
+        }
+        setAuthChecking(false);
     }, []);
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        try {
-            setAuthChecking(true);
-            // Configurar persistência longa (Local Storage)
-            await setPersistence(auth, browserLocalPersistence);
-            await signInWithEmailAndPassword(auth, userEmail, password);
+        if (password === SECRET_PASSWORD) {
             setIsAuthenticated(true);
-        } catch (error: any) {
-            alert('Erro ao entrar: ' + (error.code === 'auth/invalid-credential' ? 'Credenciais inválidas' : error.message));
-        } finally {
-            setAuthChecking(false);
+            localStorage.setItem('redflix_admin_session', JSON.stringify({
+                authenticated: true,
+                timestamp: Date.now()
+            }));
+        } else {
+            alert('Senha Incorreta!');
         }
     };
 
-    const handleLogout = async () => {
-        await signOut(auth);
+    const handleLogout = () => {
+        localStorage.removeItem('redflix_admin_session');
         setIsAuthenticated(false);
+        window.location.reload();
     };
 
     const handleGeneratePixCode = async () => {
@@ -293,19 +283,23 @@ export default function AdminDashboard() {
                         <Lock className="text-white" size={40} />
                     </div>
                     <h1 className="text-4xl font-black italic text-white tracking-tighter uppercase">REDFLIX <span className="text-red-600">ADMIN</span></h1>
-                    <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Área Restrita - Autenticação Email</p>
+                    <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Área Restrita - Senha Mestra</p>
                 </div>
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-6">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">E-mail Administrativo</label>
-                        <input type="email" placeholder="ADMIN@REDFLIX" className="w-full bg-black border border-white/10 p-5 rounded-2xl text-white font-bold focus:border-red-600 outline-none transition-all placeholder:opacity-20" value={userEmail} onChange={e => setUserEmail(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Senha Criptografada</label>
-                        <input type="password" placeholder="••••••••" className="w-full bg-black border border-white/10 p-5 rounded-2xl text-white font-bold tracking-widest focus:border-red-600 outline-none transition-all" value={password} onChange={e => setPassword(e.target.value)} required />
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Senha de Acesso</label>
+                        <input
+                            type="password"
+                            placeholder="••••••••"
+                            className="w-full bg-black border border-white/10 p-5 rounded-2xl text-white font-bold tracking-widest focus:border-red-600 outline-none transition-all text-center text-xl"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            required
+                            autoFocus
+                        />
                     </div>
                     <button className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-red-600/40 text-sm italic tracking-tighter uppercase mt-4">
-                        DESBLOQUEAR ACESSO
+                        DESBLOQUEAR SISTEMA
                     </button>
                     <p className="text-center text-[9px] text-gray-700 font-bold uppercase tracking-widest mt-6">Sessão protegida por 7 dias</p>
                 </form>
