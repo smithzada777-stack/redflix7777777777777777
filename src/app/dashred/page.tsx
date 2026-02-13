@@ -1,12 +1,18 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { db } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import {
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut,
+    setPersistence,
+    browserLocalPersistence
+} from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, Timestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import {
     Users, Phone, Mail, Clock, Shield, Search, LogOut, CheckCircle2,
     AlertCircle, DollarSign, TrendingUp, BarChart3, Star,
-    MoreVertical, FileText, Trash2, Smartphone, Send, Calendar, Percent, QrCode, Copy, Loader2, Menu, X
+    MoreVertical, FileText, Trash2, Smartphone, Send, Calendar, Percent, QrCode, Copy, Loader2, Menu, X, Lock
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -52,12 +58,18 @@ const getDaysRemaining = (createdAt: Timestamp | null, plan: string) => {
 };
 
 export default function AdminDashboard() {
-    const SECRET_PASSWORD = 'dviela123';
-    const SESSION_DURATION = 24 * 60 * 60 * 1000;
+    // --- Security Config ---
+    const ALLOWED_IP = process.env.NEXT_PUBLIC_ALLOWED_IP; // Configure no .env.local
+    const MAX_SESSION_DAYS = 7;
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [userEmail, setUserEmail] = useState('');
     const [password, setPassword] = useState('');
     const [authChecking, setAuthChecking] = useState(true);
+    const [ipChecking, setIpChecking] = useState(true);
+    const [isIpAuthorized, setIsIpAuthorized] = useState(true);
+    const [clientIp, setClientIp] = useState('');
+
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'expiring' | 'pix'>('overview');
@@ -80,6 +92,126 @@ export default function AdminDashboard() {
     const [realEmail, setRealEmail] = useState('');
     const [realPhone, setRealPhone] = useState('');
 
+    // 1. Verificação de IP (Ultra Proteção)
+    useEffect(() => {
+        const checkIp = async () => {
+            try {
+                const response = await axios.get('https://api.ipify.org?format=json');
+                const ip = response.data.ip;
+                setClientIp(ip);
+
+                // Se a variável ALLOWED_IP estiver configurada, bloqueia se for diferente
+                if (ALLOWED_IP && ip !== ALLOWED_IP) {
+                    setIsIpAuthorized(false);
+                } else {
+                    setIsIpAuthorized(true);
+                }
+            } catch (error) {
+                console.error("Erro ao validar IP:", error);
+                // Em caso de erro na API de IP, por segurança, poderíamos bloquear, 
+                // mas vamos permitir se não houver IP configurado no env.
+                if (ALLOWED_IP) setIsIpAuthorized(false);
+            }
+            setIpChecking(false);
+        };
+        checkIp();
+    }, [ALLOWED_IP]);
+
+    // 2. Monitoramento de Autenticação Firebase
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Verificar se a sessão expirou (1 semana)
+                const lastSignIn = user.metadata.lastSignInTime;
+                if (lastSignIn) {
+                    const lastSignInDate = new Date(lastSignIn);
+                    const diffDays = (Date.now() - lastSignInDate.getTime()) / (1000 * 60 * 60 * 24);
+
+                    if (diffDays > MAX_SESSION_DAYS) {
+                        signOut(auth);
+                        setIsAuthenticated(false);
+                    } else {
+                        setIsAuthenticated(true);
+                    }
+                }
+            } else {
+                setIsAuthenticated(false);
+            }
+            setAuthChecking(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            setAuthChecking(true);
+            // Configurar persistência longa (Local Storage)
+            await setPersistence(auth, browserLocalPersistence);
+            await signInWithEmailAndPassword(auth, userEmail, password);
+            setIsAuthenticated(true);
+        } catch (error: any) {
+            alert('Erro ao entrar: ' + (error.code === 'auth/invalid-credential' ? 'Credenciais inválidas' : error.message));
+        } finally {
+            setAuthChecking(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        await signOut(auth);
+        setIsAuthenticated(false);
+    };
+
+    const handleGeneratePixCode = async () => {
+        if (!pixAmount) return alert('Informe o valor.');
+        let email = pixType === 'real' ? realEmail : `anon.${Math.floor(Math.random() * 10000)}@redflix.com`;
+        if (pixType === 'real' && (!realEmail || !realPhone)) return alert('Preencha os campos.');
+        setPixLoading(true); setManualPixStatus('pending');
+        try {
+            const res = await axios.post('/api/payment', { amount: pixAmount, description: 'Venda Dash', payerEmail: email, origin: 'painel-admin' });
+            if (res.data.qrcode_content) {
+                setGeneratedPixString(res.data.qrcode_content);
+                setGeneratedPixImage(res.data.qrcode_image_url);
+                setLastManualPixId(res.data.transaction_id);
+                // Sync with Firebase
+                const leadRef = doc(db, "leads", res.data.transaction_id);
+                const leadData = {
+                    email,
+                    phone: realPhone || '11999999999',
+                    plan: 'Dash Pix',
+                    price: pixAmount,
+                    status: 'pending',
+                    transactionId: res.data.transaction_id,
+                    createdAt: Timestamp.now()
+                };
+
+                try {
+                    await updateDoc(leadRef, leadData);
+                } catch (e) {
+                    const { setDoc } = await import('firebase/firestore');
+                    await setDoc(leadRef, leadData);
+                }
+            }
+        } catch (e) { alert('Erro ao gerar Pix.'); setManualPixStatus('none'); }
+        finally { setPixLoading(false); }
+    };
+
+    const getProposal = (type: string) => {
+        if (!selectedLead) return { text: '', link: '' };
+        const base = type === 'monthly' ? 29.9 : type === 'trimestral' ? 79.9 : 149.9;
+        const name = type === 'monthly' ? 'Mensal' : type === 'trimestral' ? 'Trimestral' : 'Semestral';
+        const final = (base * (1 - discount / 100)).toFixed(2).replace('.', ',');
+        const link = `${window.location.origin}/checkout/simple?plan=${encodeURIComponent(name)}&price=${final}&leadId=${selectedLead.id}`;
+        const days = getDaysRemaining(selectedLead.createdAt, selectedLead.plan);
+
+        return {
+            direct: `Olá! Seu plano RedFlix vence em ${days} dias. Garanti um desconto de ${discount}% para sua renovação: ${link}`,
+            creative: `🎬 Opa! Sua pipoca está pronta, mas seu RedFlix está vencendo! Liberei ${discount}% OFF para você não parar a maratona: ${link}`,
+            aggressive: `⚠️ ATENÇÃO: Seu sinal RedFlix será cortado em ${days} dias. EVITE O BLOQUEIO agora com ${discount}% de desconto exclusivo: ${link}`,
+            link
+        };
+    };
+
     useEffect(() => {
         if (!lastManualPixId) return;
         const unsub = onSnapshot(doc(db, "leads", lastManualPixId), (snap) => {
@@ -87,34 +219,6 @@ export default function AdminDashboard() {
         });
         return () => unsub();
     }, [lastManualPixId]);
-
-    useEffect(() => {
-        const stored = localStorage.getItem('redflix_admin_session');
-        if (stored) {
-            try {
-                const { timestamp, authenticated } = JSON.parse(stored);
-                if (authenticated && (Date.now() - timestamp < SESSION_DURATION)) setIsAuthenticated(true);
-            } catch (e) { localStorage.removeItem('redflix_admin_session'); }
-        }
-        setAuthChecking(false);
-    }, []);
-
-    useEffect(() => {
-        if (!isAuthenticated) return;
-        const unsubscribe = onSnapshot(query(collection(db, "leads"), orderBy("createdAt", "desc")), (snapshot) => {
-            setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)));
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    }, [isAuthenticated]);
-
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (password === SECRET_PASSWORD) {
-            setIsAuthenticated(true);
-            localStorage.setItem('redflix_admin_session', JSON.stringify({ authenticated: true, timestamp: Date.now() }));
-        } else alert('Senha Incorreta!');
-    };
 
     const metrics = useMemo(() => {
         const now = new Date();
@@ -152,56 +256,57 @@ export default function AdminDashboard() {
         };
     }, [leads, searchTerm, dateFilter, rowsPerPage]);
 
-    const handleGeneratePixCode = async () => {
-        if (!pixAmount) return alert('Informe o valor.');
-        let email = pixType === 'real' ? realEmail : `anon.${Math.floor(Math.random() * 10000)}@redflix.com`;
-        if (pixType === 'real' && (!realEmail || !realPhone)) return alert('Preencha os campos.');
-        setPixLoading(true); setManualPixStatus('pending');
-        try {
-            const res = await axios.post('/api/payment', { amount: pixAmount, description: 'Venda Dash', payerEmail: email, origin: 'painel-admin' });
-            if (res.data.qrcode_content) {
-                setGeneratedPixString(res.data.qrcode_content);
-                setGeneratedPixImage(res.data.qrcode_image_url);
-                setLastManualPixId(res.data.transaction_id);
-                // Sync with Firebase
-                const leadRef = doc(collection(db, "leads"), res.data.transaction_id);
-                await updateDoc(leadRef, { email, phone: realPhone || '11999999999', plan: 'Dash Pix', price: pixAmount, status: 'pending', transactionId: res.data.transaction_id, createdAt: Timestamp.now() }).catch(async () => {
-                    const { setDoc } = await import('firebase/firestore');
-                    await setDoc(leadRef, { email, phone: realPhone || '11999999999', plan: 'Dash Pix', price: pixAmount, status: 'pending', transactionId: res.data.transaction_id, createdAt: Timestamp.now() });
-                });
-            }
-        } catch (e) { alert('Erro ao gerar Pix.'); setManualPixStatus('none'); }
-        finally { setPixLoading(false); }
+    const deleteLead = async (id: string) => {
+        if (!confirm('Tem certeza que deseja excluir?')) return;
+        await deleteDoc(doc(db, "leads", id));
     };
 
-    const getProposal = (type: string) => {
-        if (!selectedLead) return { text: '', link: '' };
-        const base = type === 'monthly' ? 29.9 : type === 'trimestral' ? 79.9 : 149.9;
-        const name = type === 'monthly' ? 'Mensal' : type === 'trimestral' ? 'Trimestral' : 'Semestral';
-        const final = (base * (1 - discount / 100)).toFixed(2).replace('.', ',');
-        const link = `${window.location.origin}/checkout/simple?plan=${encodeURIComponent(name)}&price=${final}&leadId=${selectedLead.id}`;
-        const days = getDaysRemaining(selectedLead.createdAt, selectedLead.plan);
+    if (authChecking || ipChecking) return (
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center space-y-4">
+            <Loader2 className="text-red-600 animate-spin" size={48} />
+            <div className="text-red-600 font-black tracking-widest animate-pulse">REDFLIX SECURITY...</div>
+        </div>
+    );
 
-        return {
-            direct: `Olá! Seu plano RedFlix vence em ${days} dias. Garanti um desconto de ${discount}% para sua renovação: ${link}`,
-            creative: `🎬 Opa! Sua pipoca está pronta, mas seu RedFlix está vencendo! Liberei ${discount}% OFF para você não parar a maratona: ${link}`,
-            aggressive: `⚠️ ATENÇÃO: Seu sinal RedFlix será cortado em ${days} dias. EVITE O BLOQUEIO agora com ${discount}% de desconto exclusivo: ${link}`,
-            link
-        };
-    };
-
-    if (authChecking) return <div className="min-h-screen bg-black flex items-center justify-center text-red-600 font-black animate-pulse">REDFLIX ADMIN...</div>;
+    // BARREIRA DE IP (Proteção Máxima)
+    if (!isIpAuthorized) return (
+        <div className="min-h-screen bg-black flex items-center justify-center p-6 text-center">
+            <div className="max-w-md space-y-6">
+                <AlertCircle className="text-red-600 mx-auto" size={80} />
+                <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase">ACESSO BLOQUEADO</h1>
+                <p className="text-gray-500 font-medium leading-relaxed">
+                    Seu endereço de IP <span className="text-red-500 font-bold">({clientIp})</span> não está autorizado a acessar este sistema de alta precisão.
+                </p>
+                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-[10px] text-gray-400 font-mono">
+                    SECURITY_ENTRY_DENIED: UNAUTHORIZED_SOURCE
+                </div>
+            </div>
+        </div>
+    );
 
     if (!isAuthenticated) return (
         <div className="min-h-screen bg-black flex items-center justify-center p-6 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black to-black">
-            <div className="w-full max-w-md bg-[#0a0a0a] p-10 rounded-3xl border border-white/5 shadow-[0_0_50px_rgba(220,38,38,0.15)]">
-                <div className="text-center mb-8">
-                    <Shield className="text-red-600 mx-auto mb-4" size={48} />
-                    <h1 className="text-3xl font-black italic text-white tracking-tighter">REDFLIX <span className="text-red-600">ADMIN</span></h1>
+            <div className="w-full max-w-md bg-[#0a0a0a] p-10 rounded-[2.5rem] border border-white/5 shadow-[0_0_80px_rgba(220,38,38,0.2)]">
+                <div className="text-center mb-10">
+                    <div className="w-20 h-20 bg-red-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl shadow-red-600/30">
+                        <Lock className="text-white" size={40} />
+                    </div>
+                    <h1 className="text-4xl font-black italic text-white tracking-tighter uppercase">REDFLIX <span className="text-red-600">ADMIN</span></h1>
+                    <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Área Restrita - Autenticação Email</p>
                 </div>
                 <form onSubmit={handleLogin} className="space-y-4">
-                    <input type="password" placeholder="SENHA MESTRA" className="w-full bg-black border border-white/10 p-4 rounded-xl text-white text-center font-bold tracking-widest focus:border-red-600 outline-none transition-all" value={password} onChange={e => setPassword(e.target.value)} />
-                    <button className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-red-600/20">ACESSAR SISTEMA</button>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">E-mail Administrativo</label>
+                        <input type="email" placeholder="ADMIN@REDFLIX" className="w-full bg-black border border-white/10 p-5 rounded-2xl text-white font-bold focus:border-red-600 outline-none transition-all placeholder:opacity-20" value={userEmail} onChange={e => setUserEmail(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Senha Criptografada</label>
+                        <input type="password" placeholder="••••••••" className="w-full bg-black border border-white/10 p-5 rounded-2xl text-white font-bold tracking-widest focus:border-red-600 outline-none transition-all" value={password} onChange={e => setPassword(e.target.value)} required />
+                    </div>
+                    <button className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-red-600/40 text-sm italic tracking-tighter uppercase mt-4">
+                        DESBLOQUEAR ACESSO
+                    </button>
+                    <p className="text-center text-[9px] text-gray-700 font-bold uppercase tracking-widest mt-6">Sessão protegida por 7 dias</p>
                 </form>
             </div>
         </div>
@@ -230,7 +335,7 @@ export default function AdminDashboard() {
                     ))}
                 </nav>
                 <div className="absolute bottom-6 left-4 right-4">
-                    <button onClick={() => { localStorage.removeItem('redflix_admin_session'); window.location.reload(); }} className="w-full flex items-center gap-4 p-4 text-gray-500 hover:text-red-500 transition-colors">
+                    <button onClick={handleLogout} className="w-full flex items-center gap-4 p-4 text-gray-500 hover:text-red-500 transition-colors">
                         <LogOut size={20} />
                         <span className={`text-xs font-black uppercase tracking-widest ${isSidebarOpen ? 'block' : 'hidden lg:block'}`}>Sair</span>
                     </button>
