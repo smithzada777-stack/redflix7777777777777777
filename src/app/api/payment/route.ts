@@ -10,7 +10,7 @@ const NEXT_PUBLIC_BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL || 'http://localh
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { amount, description, payerEmail, leadId } = body;
+        const { amount, description, payerEmail, leadId, origin } = body;
 
         console.log('--- [PIX API] INICIANDO GERAÇÃO ---');
         console.log('Valor:', amount);
