@@ -89,6 +89,7 @@ export default function AdminDashboard() {
     const [customDateStart, setCustomDateStart] = useState('');
     const [customDateEnd, setCustomDateEnd] = useState('');
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [currentPage, setCurrentPage] = useState(1);
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
     const [planFilter, setPlanFilter] = useState('all');
     const [priceFilter, setPriceFilter] = useState('');
@@ -179,7 +180,13 @@ export default function AdminDashboard() {
 
         setPixLoading(true); setManualPixStatus('pending');
         try {
-            const res = await axios.post('/api/payment', { amount: pixAmount, description: 'Venda Dash', payerEmail: email, origin: 'painel-admin' });
+            const cleanAmount = pixAmount.replace(',', '.');
+            const res = await axios.post('/api/payment', {
+                amount: cleanAmount,
+                description: 'Venda Dash',
+                payerEmail: email,
+                origin: 'painel-admin'
+            });
             if (res.data.qrcode_content) {
                 setGeneratedPixString(res.data.qrcode_content);
                 setGeneratedPixImage(res.data.qrcode_image_url);
@@ -300,7 +307,7 @@ export default function AdminDashboard() {
                     dateFilter === 'custom' ? 'Período' : 'Sempre';
 
         return {
-            data: filtered.slice(0, rowsPerPage),
+            data: filtered,
             kpiLabel,
             revenueFiltered: revFiltered,
             salesFiltered: approvedCount,
@@ -565,7 +572,7 @@ export default function AdminDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
-                                            {metrics.data.map(lead => (
+                                            {metrics.data.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map(lead => (
                                                 <tr key={lead.id} className={`hover:bg-white/[0.02] transition-colors group ${selectedLeads.includes(lead.id) ? 'bg-red-600/5' : ''}`}>
                                                     <td className="px-8 py-6">
                                                         <input
@@ -603,6 +610,52 @@ export default function AdminDashboard() {
                                         </tbody>
                                     </table>
                                 </div>
+
+                                {/* Paginação */}
+                                <div className="p-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 bg-[#050505]">
+                                    <div className="flex items-center gap-4">
+                                        <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Exibir:</label>
+                                        <select
+                                            value={rowsPerPage}
+                                            onChange={e => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                                            className="bg-black border border-white/10 rounded-lg px-3 py-1.5 text-[10px] font-black text-white focus:border-red-600 outline-none"
+                                        >
+                                            {[5, 10, 20, 50, 100].map(n => <option key={n} value={n}>{n} itens</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage(prev => prev - 1)}
+                                            className="p-2 border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-20 transition-all text-gray-400"
+                                        >
+                                            <Calendar size={14} className="rotate-90" />
+                                        </button>
+                                        {Array.from({ length: Math.ceil(metrics.data.length / rowsPerPage) }, (_, i) => i + 1)
+                                            .filter(p => p === 1 || p === Math.ceil(metrics.data.length / rowsPerPage) || Math.abs(p - currentPage) <= 1)
+                                            .map((p, i, arr) => (
+                                                <React.Fragment key={p}>
+                                                    {i > 0 && arr[i - 1] !== p - 1 && <span className="text-gray-600">...</span>}
+                                                    <button
+                                                        onClick={() => setCurrentPage(p)}
+                                                        className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all ${currentPage === p ? 'bg-red-600 text-white' : 'hover:bg-white/5 text-gray-500'}`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                </React.Fragment>
+                                            ))}
+                                        <button
+                                            disabled={currentPage === Math.ceil(metrics.data.length / rowsPerPage)}
+                                            onClick={() => setCurrentPage(prev => prev + 1)}
+                                            className="p-2 border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-20 transition-all text-gray-400"
+                                        >
+                                            <Calendar size={14} className="-rotate-90" />
+                                        </button>
+                                    </div>
+                                    <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest">
+                                        Mostrando {Math.min(metrics.data.length, (currentPage - 1) * rowsPerPage + 1)}-{Math.min(metrics.data.length, currentPage * rowsPerPage)} de {metrics.data.length}
+                                    </div>
+                                </div>
                             </div>
                         </>
                     )}
@@ -623,8 +676,17 @@ export default function AdminDashboard() {
                                             { id: 'all', label: 'Sempre' },
                                             { id: 'custom', label: 'Personalizado' }
                                         ].map(f => (
-                                            <button key={f.id} onClick={() => setDateFilter(f.id as any)} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${dateFilter === f.id ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-white'}`}>{f.label}</button>
+                                            <button key={f.id} onClick={() => { setDateFilter(f.id as any); setCurrentPage(1); }} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${dateFilter === f.id ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-white'}`}>{f.label}</button>
                                         ))}
+                                    </div>
+                                    <div className="flex bg-[#0a0a0a] p-1 rounded-xl border border-white/5 ml-4">
+                                        <select
+                                            value={rowsPerPage}
+                                            onChange={e => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                                            className="bg-transparent border-none text-[10px] font-black text-gray-500 uppercase px-2 outline-none"
+                                        >
+                                            {[5, 10, 15, 20, 50].map(n => <option key={n} value={n}>{n} POR PÁG</option>)}
+                                        </select>
                                     </div>
                                     {dateFilter === 'custom' && (
                                         <div className="flex items-center gap-2">
@@ -655,7 +717,7 @@ export default function AdminDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
-                                            {metrics.expiring.map(lead => {
+                                            {metrics.expiring.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map(lead => {
                                                 const days = getDaysRemaining(lead.createdAt, lead.plan);
                                                 const isUrgent = days <= 5;
                                                 return (
@@ -687,6 +749,41 @@ export default function AdminDashboard() {
                                             })}
                                         </tbody>
                                     </table>
+                                </div>
+
+                                <div className="p-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 bg-[#050505]">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage(prev => prev - 1)}
+                                            className="p-2 border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-20 transition-all text-gray-400"
+                                        >
+                                            <Calendar size={14} className="rotate-90" />
+                                        </button>
+                                        {Array.from({ length: Math.ceil(metrics.expiring.length / rowsPerPage) }, (_, i) => i + 1)
+                                            .filter(p => p === 1 || p === Math.ceil(metrics.expiring.length / rowsPerPage) || Math.abs(p - currentPage) <= 1)
+                                            .map((p, i, arr) => (
+                                                <React.Fragment key={p}>
+                                                    {i > 0 && arr[i - 1] !== p - 1 && <span className="text-gray-600">...</span>}
+                                                    <button
+                                                        onClick={() => setCurrentPage(p)}
+                                                        className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all ${currentPage === p ? 'bg-red-600 text-white' : 'hover:bg-white/5 text-gray-500'}`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                </React.Fragment>
+                                            ))}
+                                        <button
+                                            disabled={currentPage === Math.ceil(metrics.expiring.length / rowsPerPage)}
+                                            onClick={() => setCurrentPage(prev => prev + 1)}
+                                            className="p-2 border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-20 transition-all text-gray-400"
+                                        >
+                                            <Calendar size={14} className="-rotate-90" />
+                                        </button>
+                                    </div>
+                                    <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest">
+                                        Mostrando {Math.min(metrics.expiring.length, (currentPage - 1) * rowsPerPage + 1)}-{Math.min(metrics.expiring.length, currentPage * rowsPerPage)} de {metrics.expiring.length}
+                                    </div>
                                 </div>
                             </div>
 
