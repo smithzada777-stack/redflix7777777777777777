@@ -1,5 +1,6 @@
 'use client';
 
+import { motion, useScroll, useSpring } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import PriceComparison from '@/components/PriceComparison';
@@ -7,7 +8,6 @@ import ContentCarousel from '@/components/ContentCarousel';
 import Testimonials from '@/components/Testimonials';
 import Plans from '@/components/Plans';
 import FAQ from '@/components/FAQ';
-
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
 
@@ -48,18 +48,52 @@ const seriesItems = [
 ];
 
 export default function Home() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
   return (
     <main className="min-h-screen bg-black text-white overflow-x-hidden relative">
+      {/* Barra de Progresso de Leitura */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-1.5 bg-primary z-[100] origin-left"
+        style={{ scaleX }}
+      />
+
       <Navbar />
-      <Hero />
-      <PriceComparison />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+      >
+        <Hero />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1 }}
+      >
+        <PriceComparison />
+      </motion.div>
 
       <section className="py-16 bg-black">
-        <div className="container mx-auto px-4 md:px-12 mb-12 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="container mx-auto px-4 md:px-12 mb-12 text-center"
+        >
           <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter">
             Na <span className="text-primary">REDFLIX</span>, você tem acesso a:
           </h2>
-        </div>
+        </motion.div>
 
         <div className="space-y-4">
           <ContentCarousel title={<>Jogos ao vivo e <span className="text-primary">MUITO MAIS</span>:</>} items={sportsItems} delay={0} />
@@ -68,8 +102,22 @@ export default function Home() {
         </div>
       </section>
 
-      <Testimonials />
-      <Plans />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+      >
+        <Testimonials />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
+      >
+        <Plans />
+      </motion.div>
+
       <FAQ />
       <Footer />
 

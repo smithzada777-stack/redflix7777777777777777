@@ -310,7 +310,7 @@ export default function AdminDashboard() {
             return passDate && passSearch && passPlan && passPrice;
         });
 
-        const approvedFiltered = filtered.filter(l => l.status === 'approved');
+        const approvedFiltered = filtered.filter(l => l.status === 'approved' || l.status === 'renewed');
         const revFiltered = approvedFiltered.reduce((acc, curr) => acc + parsePrice(curr.price), 0);
         const approvedCount = approvedFiltered.length;
 
@@ -333,7 +333,7 @@ export default function AdminDashboard() {
             conversion: filtered.length > 0 ? (approvedCount / filtered.length) * 100 : 0,
             bestPlan: best ? best[0] : 'N/A',
             expiring: approvedFiltered.sort((a, b) => getDaysRemaining(a.createdAt, a.plan) - getDaysRemaining(b.createdAt, b.plan)),
-            expiringTotal: leads.filter(l => l.status === 'approved').length
+            expiringTotal: leads.filter(l => l.status === 'approved' || l.status === 'renewed').length
         };
     }, [leads, searchTerm, dateFilter, customDateStart, customDateEnd, rowsPerPage, planFilter, priceFilter]);
 
@@ -615,8 +615,8 @@ export default function AdminDashboard() {
                                                     </td>
                                                     <td className="px-8 py-6 text-center">
                                                         <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${lead.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                                                                lead.status === 'renewed' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
-                                                                    'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
+                                                            lead.status === 'renewed' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                                                                'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
                                                             }`}>
                                                             {lead.status === 'approved' ? 'Aprovado' : lead.status === 'renewed' ? 'Renovado' : 'Pendente'}
                                                         </span>

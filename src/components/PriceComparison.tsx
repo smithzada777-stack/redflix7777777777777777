@@ -38,11 +38,11 @@ const competitors = [
 export default function PriceComparison() {
     const [currentSlide, setCurrentSlide] = useState(0);
 
-    // Auto-advance carousel (VELOCIDADE TURBO: 1.5s)
+    // Auto-advance carousel (VELOCIDADE TURBO: 1.0s)
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % competitors.length);
-        }, 1500);
+        }, 1000);
         return () => clearInterval(timer);
     }, []);
 
@@ -158,8 +158,8 @@ export default function PriceComparison() {
                                 <div className="bg-neutral-100/5 rounded-xl p-3 border border-primary/20 mb-2">
                                     <p className="text-[10px] text-gray-400 mb-2 uppercase tracking-widest font-bold">Inclui conteúdo de:</p>
                                     <div className="flex justify-center gap-6 overflow-hidden">
-                                        {/* LOGOS EM VELOCIDADE DE 8s (IGUAL FILMES) */}
-                                        <div className="animate-marquee flex items-center gap-8" style={{ animationDuration: '8s' }}>
+                                        {/* LOGOS EM VELOCIDADE DE 4s (TURBO) */}
+                                        <div className="animate-marquee flex items-center gap-8" style={{ animationDuration: '4s' }}>
                                             {competitors.map(c => <CompetitorLogo key={c.name} name={c.name} className="h-6 w-auto" />)}
                                             {competitors.map(c => <CompetitorLogo key={c.name + 'd'} name={c.name} className="h-6 w-auto" />)}
                                         </div>

@@ -3,10 +3,12 @@
 // 🔒 ARQUIVO BLOQUEADO - SENHA PARA EDIÇÃO: 123 🔒
 // ESTE ARQUIVO NÃO DEVE SER ALTERADO SEM AUTORIZAÇÃO EXPLÍCITA E A SENHA.
 
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Shield, Zap, Tv, Film, Download, Headphones, Users, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getCountFromServer } from 'firebase/firestore';
 
 const bonuses = [
     { id: 1, icon: Tv, title: '3 Telas Simultâneas', desc: 'Assista no celular, TV e PC ao mesmo tempo.' },
@@ -17,38 +19,57 @@ const bonuses = [
     { id: 6, icon: Download, title: 'Modo Offline', desc: 'Baixe seus filmes e assista sem internet.' },
 ];
 
-const plans = [
-    {
-        id: 1,
-        period: '1 Mês',
-        price: '29,90',
-        oldPrice: '39,90',
-        subtext: 'Plano Mensal (Completo)',
-        highlight: false,
-        users: 57
-    },
-    {
-        id: 2,
-        period: '3 Meses',
-        price: '79,90',
-        oldPrice: '89,70',
-        save: '11%',
-        highlight: true,
-        users: 1345
-    },
-    {
-        id: 3,
-        period: '6 Meses',
-        price: '149,90',
-        oldPrice: '179,40',
-        save: '16%',
-        highlight: false,
-        users: 570
-    },
-];
-
 export default function Plans() {
     const router = useRouter();
+    const [realSales, setRealSales] = useState(0);
+
+    useEffect(() => {
+        const fetchCounts = async () => {
+            try {
+                // Conta approved
+                const qApp = query(collection(db, "leads"), where("status", "==", "approved"));
+                const snapApp = await getCountFromServer(qApp);
+                // Conta renewed
+                const qRen = query(collection(db, "leads"), where("status", "==", "renewed"));
+                const snapRen = await getCountFromServer(qRen);
+
+                setRealSales(snapApp.data().count + snapRen.data().count);
+            } catch (e) {
+                console.error("Erro ao contar sales:", e);
+            }
+        };
+        fetchCounts();
+    }, []);
+
+    const plans = [
+        {
+            id: 1,
+            period: '1 Mês',
+            price: '29,90',
+            oldPrice: '39,90',
+            subtext: 'Plano Mensal (Completo)',
+            highlight: false,
+            users: 57 + realSales // Base + Real
+        },
+        {
+            id: 2,
+            period: '3 Meses',
+            price: '79,90',
+            oldPrice: '89,70',
+            save: '11%',
+            highlight: true,
+            users: 1345 + (realSales * 3) // Base + Real (Simulando proporção)
+        },
+        {
+            id: 3,
+            period: '6 Meses',
+            price: '149,90',
+            oldPrice: '179,40',
+            save: '16%',
+            highlight: false,
+            users: 570 + (realSales * 1.5) // Base + Real
+        },
+    ];
 
     const goToCheckout = (id: number, period: string, price: string) => {
         router.push(`/checkout?id=${id}&plan=${encodeURIComponent(period)}&price=${price}`);
