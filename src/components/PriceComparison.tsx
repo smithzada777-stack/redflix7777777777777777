@@ -38,11 +38,11 @@ const competitors = [
 export default function PriceComparison() {
     const [currentSlide, setCurrentSlide] = useState(0);
 
-    // Auto-advance carousel (VELOCIDADE TURBO: 0.8s)
+    // Auto-advance carousel (VELOCIDADE: 3.5s para leitura tranquila)
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % competitors.length);
-        }, 800);
+        }, 3500);
         return () => clearInterval(timer);
     }, []);
 
