@@ -276,6 +276,7 @@ function SimpleCheckoutContent() {
                 price: planPriceStr,
                 status: 'pending',
                 source: 'simple_checkout',
+                origin: 'landing_page', // IDENTIFICADOR PARA FILTRO NO DASHBOARD
                 createdAt: serverTimestamp()
             });
 

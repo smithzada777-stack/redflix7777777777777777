@@ -24,6 +24,7 @@ interface Lead {
     plan: string;
     price: string;
     status: string;
+    origin?: string;
     createdAt: Timestamp | null;
 }
 
@@ -93,6 +94,7 @@ export default function AdminDashboard() {
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
     const [planFilter, setPlanFilter] = useState('all');
     const [priceFilter, setPriceFilter] = useState('');
+    const [originFilter, setOriginFilter] = useState('all');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -306,8 +308,9 @@ export default function AdminDashboard() {
 
             const passPlan = planFilter === 'all' || l.plan === planFilter;
             const passPrice = !priceFilter || String(l.price).includes(priceFilter);
+            const passOrigin = originFilter === 'all' || l.origin === originFilter;
 
-            return passDate && passSearch && passPlan && passPrice;
+            return passDate && passSearch && passPlan && passPrice && passOrigin;
         });
 
         const approvedFiltered = filtered.filter(l => l.status === 'approved' || l.status === 'renewed');
@@ -534,7 +537,7 @@ export default function AdminDashboard() {
                                             </button>
                                         )}
                                     </div>
-                                    <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-4 gap-4">
                                         <div className="relative">
                                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
                                             <input
@@ -565,6 +568,16 @@ export default function AdminDashboard() {
                                                 onChange={e => setPriceFilter(e.target.value)}
                                                 className="bg-black border border-white/10 rounded-xl py-3 px-4 text-[9px] font-black focus:border-red-600 outline-none transition-all placeholder:opacity-30 uppercase"
                                             />
+                                            <select
+                                                value={originFilter}
+                                                onChange={e => setOriginFilter(e.target.value)}
+                                                className="bg-black border border-white/10 rounded-xl py-3 px-4 text-[9px] font-black text-gray-400 focus:border-red-600 outline-none transition-all uppercase"
+                                            >
+                                                <option value="all">SITES (GERAL)</option>
+                                                <option value="landing_page">REDFLIX LP</option>
+                                                <option value="renove">RENOVE APP</option>
+                                                <option value="painel-admin">DASHBOARD</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -585,6 +598,7 @@ export default function AdminDashboard() {
                                                 </th>
                                                 <th className="px-8 py-5">Cliente</th>
                                                 <th className="px-8 py-5">Plano / Valor</th>
+                                                <th className="px-8 py-5 text-center">Origem</th>
                                                 <th className="px-8 py-5 text-center">Status</th>
                                                 <th className="px-8 py-5 text-right">Ações</th>
                                             </tr>
@@ -612,6 +626,11 @@ export default function AdminDashboard() {
                                                             <span className="bg-red-600/10 text-red-500 border border-red-600/20 px-2 py-0.5 rounded text-[9px] font-black uppercase">{lead.plan}</span>
                                                             <span className="text-xs font-black text-gray-300">{formatCurrency(parsePrice(lead.price))}</span>
                                                         </div>
+                                                    </td>
+                                                    <td className="px-8 py-6 text-center">
+                                                        <span className="text-[9px] font-black uppercase text-gray-500 bg-white/5 px-2 py-1 rounded border border-white/5">
+                                                            {lead.origin === 'renove' ? 'RENOVE' : lead.origin === 'landing_page' ? 'REDFLIX' : lead.origin || 'OUTRO'}
+                                                        </span>
                                                     </td>
                                                     <td className="px-8 py-6 text-center">
                                                         <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${lead.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
