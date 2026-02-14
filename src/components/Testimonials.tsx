@@ -39,24 +39,25 @@ export default function Testimonials() {
 
                 <div className="relative w-full overflow-hidden">
                     {/* SOMBRAS LATERAIS PARA NÃO PARECER CORTADO */}
-                    <div className="absolute left-0 top-0 bottom-0 w-24 md:w-64 bg-gradient-to-r from-black via-black/50 to-transparent z-20 pointer-events-none" />
-                    <div className="absolute right-0 top-0 bottom-0 w-24 md:w-64 bg-gradient-to-l from-black via-black/50 to-transparent z-20 pointer-events-none" />
+                    {/* REMOVED SIDE BLURS as requested */}
+
 
                     {/* Versão MOBILE: Cards Dark Empilhados */}
-                    <div className="md:hidden flex flex-col gap-4 py-4 px-2">
+                    {/* Versão MOBILE: Grid 2 colunas */}
+                    <div className="md:hidden grid grid-cols-2 gap-3 py-4 px-2">
                         {testimonials.slice(0, 6).map((t) => (
                             <div
                                 key={t.id}
-                                className="bg-[#0d0d0d] p-5 rounded-2xl shadow-xl border border-white/[0.05] flex flex-col justify-between group h-fit"
+                                className="bg-white p-4 rounded-xl shadow-lg border border-gray-100 flex flex-col justify-between group h-full"
                             >
                                 <div>
-                                    <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center justify-between mb-3">
                                         <div className="flex gap-0.5">
                                             {[...Array(5)].map((_, starIdx) => (
                                                 <Star
                                                     key={starIdx}
                                                     size={10}
-                                                    className={starIdx < t.stars ? "text-primary fill-primary" : "text-gray-700"}
+                                                    className={starIdx < t.stars ? "text-primary fill-primary" : "text-gray-300"}
                                                 />
                                             ))}
                                         </div>
@@ -65,12 +66,12 @@ export default function Testimonials() {
                                             <span className="text-[8px] font-black text-green-500 uppercase">Online</span>
                                         </div>
                                     </div>
-                                    <p className="text-gray-300 text-sm font-medium italic leading-relaxed mb-5">"{t.text}"</p>
+                                    <p className="text-gray-600 text-[10px] font-medium italic leading-relaxed mb-4">"{t.text}"</p>
                                 </div>
-                                <div className="flex items-center gap-3 border-t border-white/[0.05] pt-4">
+                                <div className="flex items-center gap-2 border-t border-gray-100 pt-3">
                                     <ProfileAvatar name={t.name} color={t.color} size="sm" />
                                     <div className="overflow-hidden">
-                                        <h4 className="font-black text-white text-[11px] uppercase tracking-tighter truncate">{t.name}</h4>
+                                        <h4 className="font-black text-gray-900 text-[10px] uppercase tracking-tighter truncate">{t.name}</h4>
                                         <div className="flex items-center gap-1 mt-0.5">
                                             <CheckCircle size={8} className="text-primary" />
                                             <span className="text-[8px] font-black text-primary uppercase tracking-tighter">Compra Garantida</span>
@@ -83,11 +84,11 @@ export default function Testimonials() {
 
                     {/* Versão DESKTOP: Carrossel Premium */}
                     <div className="hidden md:flex overflow-hidden group">
-                        <div className="flex animate-marquee gap-8 py-10">
+                        <div className="flex animate-marquee gap-8 py-10" style={{ animationDuration: '120s' }}>
                             {[...testimonials, ...testimonials].map((t, i) => (
                                 <div
                                     key={`${t.id}-${i}`}
-                                    className="flex-none w-[380px] bg-gradient-to-b from-[#111] to-[#0a0a0a] p-8 rounded-[2.5rem] border border-white/[0.05] shadow-2xl transition-all duration-500 hover:border-primary/40 hover:-translate-y-2 hover:shadow-primary/5 group/card"
+                                    className="flex-none w-[380px] bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl transition-all duration-500 hover:border-primary/40 hover:-translate-y-2 hover:shadow-primary/5 group/card"
                                 >
                                     <div className="flex items-center justify-between mb-8">
                                         <div className="flex gap-1.5">
@@ -95,7 +96,7 @@ export default function Testimonials() {
                                                 <Star
                                                     key={starIdx}
                                                     size={16}
-                                                    className={`${starIdx < t.stars ? "text-primary fill-primary" : "text-gray-700"} group-hover/card:scale-110 transition-transform`}
+                                                    className={`${starIdx < t.stars ? "text-primary fill-primary" : "text-gray-300"} group-hover/card:scale-110 transition-transform`}
                                                 />
                                             ))}
                                         </div>
@@ -104,11 +105,11 @@ export default function Testimonials() {
                                             <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Ativo Agora</span>
                                         </div>
                                     </div>
-                                    <p className="text-gray-300 text-lg font-medium italic leading-relaxed mb-10 min-h-[90px] group-hover/card:text-white transition-colors">"{t.text}"</p>
-                                    <div className="flex items-center gap-4 border-t border-white/[0.05] pt-8">
+                                    <p className="text-gray-600 text-lg font-medium italic leading-relaxed mb-10 min-h-[90px] group-hover/card:text-black transition-colors">"{t.text}"</p>
+                                    <div className="flex items-center gap-4 border-t border-gray-100 pt-8">
                                         <ProfileAvatar name={t.name} color={t.color} />
                                         <div className="flex-1">
-                                            <h4 className="font-black text-white text-base uppercase tracking-tight mb-1">{t.name}</h4>
+                                            <h4 className="font-black text-gray-900 text-base uppercase tracking-tight mb-1">{t.name}</h4>
                                             <div className="flex items-center gap-2">
                                                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
                                                     <CheckCircle size={10} className="text-primary" />
