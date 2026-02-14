@@ -10,6 +10,16 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, onSnapshot, query, where, orderBy, limit } from 'firebase/firestore';
 import axios from 'axios';
 
+const formatPhone = (v: string) => {
+    if (!v) return "";
+    v = v.replace(/\D/g, "");
+    v = v.replace(/(\d{2})(\d)/, "($1) $2");
+    v = v.replace(/(\d{5})(\d)/, "$1-$2");
+    return v.slice(0, 15);
+};
+
+const isValidGmail = (e: string) => e.toLowerCase().endsWith('@gmail.com');
+
 function SimpleCheckoutContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -18,8 +28,8 @@ function SimpleCheckoutContent() {
     const leadIdParam = searchParams.get('leadId');
 
     const [formData, setFormData] = useState({
-        email: 'teste@email.com',
-        phone: '(11) 99345-1234'
+        email: '',
+        phone: ''
     });
 
     // Steps: 0 = Offer Summary (only if leadId), 1 = Form, 2 = Pix, 3 = Success
@@ -229,6 +239,12 @@ function SimpleCheckoutContent() {
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!isValidGmail(formData.email)) {
+            alert("Apenas e-mails do @gmail.com são permitidos para garantir que você receba seu acesso na hora.");
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -444,7 +460,7 @@ function SimpleCheckoutContent() {
                                         <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-primary transition-colors" size={20} />
                                         <input
                                             type="email"
-                                            placeholder="seu@email.com"
+                                            placeholder="seu@gmail.com"
                                             className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 pl-14 pr-6 text-sm text-white focus:border-primary/40 focus:bg-black/60 focus:outline-none transition-all placeholder:text-gray-700 font-bold"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -461,7 +477,7 @@ function SimpleCheckoutContent() {
                                             placeholder="(11) 99999-9999"
                                             className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 pl-14 pr-6 text-sm text-white focus:border-primary/40 focus:bg-black/60 focus:outline-none transition-all placeholder:text-gray-700 font-bold"
                                             value={formData.phone}
-                                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                            onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
                                         />
                                     </div>
                                 </div>

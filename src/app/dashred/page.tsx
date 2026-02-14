@@ -42,6 +42,16 @@ const formatCurrency = (val: number) => {
     }).format(val);
 };
 
+const formatPhone = (v: string) => {
+    if (!v) return "";
+    v = v.replace(/\D/g, "");
+    v = v.replace(/(\d{2})(\d)/, "($1) $2");
+    v = v.replace(/(\d{5})(\d)/, "$1-$2");
+    return v.slice(0, 15);
+};
+
+const isValidGmail = (e: string) => e.toLowerCase().endsWith('@gmail.com');
+
 const getDaysRemaining = (createdAt: Timestamp | null, plan: string) => {
     if (!createdAt) return 999;
     const startDate = createdAt.toDate();
@@ -161,7 +171,12 @@ export default function AdminDashboard() {
     const handleGeneratePixCode = async () => {
         if (!pixAmount) return alert('Informe o valor.');
         let email = pixType === 'real' ? realEmail : `anon.${Math.floor(Math.random() * 10000)}@redflix.com`;
-        if (pixType === 'real' && (!realEmail || !realPhone)) return alert('Preencha os campos.');
+
+        if (pixType === 'real') {
+            if (!realEmail || !realPhone) return alert('Preencha os campos.');
+            if (!isValidGmail(realEmail)) return alert('Apenas e-mails @gmail.com são permitidos para garantir a entrega.');
+        }
+
         setPixLoading(true); setManualPixStatus('pending');
         try {
             const res = await axios.post('/api/payment', { amount: pixAmount, description: 'Venda Dash', payerEmail: email, origin: 'painel-admin' });
@@ -292,7 +307,8 @@ export default function AdminDashboard() {
             leadsFiltered: filtered.length,
             conversion: filtered.length > 0 ? (approvedCount / filtered.length) * 100 : 0,
             bestPlan: best ? best[0] : 'N/A',
-            expiring: leads.filter(l => l.status === 'approved').sort((a, b) => getDaysRemaining(a.createdAt, a.plan) - getDaysRemaining(b.createdAt, b.plan))
+            expiring: approvedFiltered.sort((a, b) => getDaysRemaining(a.createdAt, a.plan) - getDaysRemaining(b.createdAt, b.plan)),
+            expiringTotal: leads.filter(l => l.status === 'approved').length
         };
     }, [leads, searchTerm, dateFilter, customDateStart, customDateEnd, rowsPerPage, planFilter, priceFilter]);
 
@@ -593,12 +609,41 @@ export default function AdminDashboard() {
 
                     {activeTab === 'expiring' && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div>
-                                <h2 className="text-3xl font-black italic tracking-tighter uppercase underline decoration-red-600 decoration-4 underline-offset-8">Recuperação de <span className="text-red-600">Vendas</span></h2>
-                                <p className="text-xs text-gray-500 mt-6 max-w-2xl font-medium leading-relaxed">Listagem de clientes com assinatura próxima do vencimento. Utilize as ações para enviar propostas de renovação ou entrar em contato direto.</p>
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                                <div>
+                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase underline decoration-red-600 decoration-4 underline-offset-8">Recuperação de <span className="text-red-600">Vendas</span></h2>
+                                    <p className="text-xs text-gray-500 mt-6 max-w-2xl font-medium leading-relaxed">Listagem de clientes com assinatura próxima do vencimento. Utilize as ações para enviar propostas de renovação ou entrar em contato direto.</p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-4">
+                                    <div className="flex bg-[#0a0a0a] p-1 rounded-xl border border-white/5">
+                                        {[
+                                            { id: 'today', label: 'Hoje' },
+                                            { id: 'yesterday', label: 'Ontem' },
+                                            { id: 'month', label: 'Mês' },
+                                            { id: 'all', label: 'Sempre' },
+                                            { id: 'custom', label: 'Personalizado' }
+                                        ].map(f => (
+                                            <button key={f.id} onClick={() => setDateFilter(f.id as any)} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${dateFilter === f.id ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-white'}`}>{f.label}</button>
+                                        ))}
+                                    </div>
+                                    {dateFilter === 'custom' && (
+                                        <div className="flex items-center gap-2">
+                                            <input type="date" value={customDateStart} onChange={e => setCustomDateStart(e.target.value)} className="bg-black border border-white/10 rounded-lg p-2 text-[10px] text-white outline-none focus:border-red-600" />
+                                            <span className="text-gray-500 text-[10px]">ATÉ</span>
+                                            <input type="date" value={customDateEnd} onChange={e => setCustomDateEnd(e.target.value)} className="bg-black border border-white/10 rounded-lg p-2 text-[10px] text-white outline-none focus:border-red-600" />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+                                <div className="p-8 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 bg-gradient-to-r from-red-600/5 to-transparent">
+                                    <h3 className="text-lg font-black italic tracking-tighter uppercase">Assinaturas Ativas ({metrics.expiring.length} de {metrics.expiringTotal})</h3>
+                                    <div className="relative w-full md:w-80">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                                        <input type="text" placeholder="PESQUISAR CLIENTE..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[10px] font-black focus:border-red-600 outline-none transition-all placeholder:opacity-30" />
+                                    </div>
+                                </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-[#050505] text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 border-b border-white/5">
@@ -761,8 +806,8 @@ export default function AdminDashboard() {
 
                                     {pixType === 'real' && (
                                         <div className="grid grid-cols-1 gap-4">
-                                            <input type="email" placeholder="EMAIL DO CLIENTE" value={realEmail} onChange={e => setRealEmail(e.target.value)} className="w-full bg-black border border-white/10 p-5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-red-600 outline-none text-white" />
-                                            <input type="text" placeholder="WHATSAPP (DDD + NÚMERO)" value={realPhone} onChange={e => setRealPhone(e.target.value)} className="w-full bg-black border border-white/10 p-5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-red-600 outline-none text-white" />
+                                            <input type="email" placeholder="EMAIL DO CLIENTE (@GMAIL.COM)" value={realEmail} onChange={e => setRealEmail(e.target.value)} className="w-full bg-black border border-white/10 p-5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-red-600 outline-none text-white" />
+                                            <input type="text" placeholder="WHATSAPP (DDD + NÚMERO)" value={realPhone} onChange={e => setRealPhone(formatPhone(e.target.value))} className="w-full bg-black border border-white/10 p-5 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:border-red-600 outline-none text-white" />
                                         </div>
                                     )}
 
