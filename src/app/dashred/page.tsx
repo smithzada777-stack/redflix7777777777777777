@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Fragment } from 'react';
 import { auth, db } from '@/lib/firebase';
 import {
     signInWithEmailAndPassword,
@@ -634,7 +634,7 @@ export default function AdminDashboard() {
                                         {Array.from({ length: Math.ceil(metrics.data.length / rowsPerPage) }, (_, i) => i + 1)
                                             .filter(p => p === 1 || p === Math.ceil(metrics.data.length / rowsPerPage) || Math.abs(p - currentPage) <= 1)
                                             .map((p, i, arr) => (
-                                                <React.Fragment key={p}>
+                                                <Fragment key={p}>
                                                     {i > 0 && arr[i - 1] !== p - 1 && <span className="text-gray-600">...</span>}
                                                     <button
                                                         onClick={() => setCurrentPage(p)}
@@ -642,7 +642,7 @@ export default function AdminDashboard() {
                                                     >
                                                         {p}
                                                     </button>
-                                                </React.Fragment>
+                                                </Fragment>
                                             ))}
                                         <button
                                             disabled={currentPage === Math.ceil(metrics.data.length / rowsPerPage)}
@@ -763,7 +763,7 @@ export default function AdminDashboard() {
                                         {Array.from({ length: Math.ceil(metrics.expiring.length / rowsPerPage) }, (_, i) => i + 1)
                                             .filter(p => p === 1 || p === Math.ceil(metrics.expiring.length / rowsPerPage) || Math.abs(p - currentPage) <= 1)
                                             .map((p, i, arr) => (
-                                                <React.Fragment key={p}>
+                                                <Fragment key={p}>
                                                     {i > 0 && arr[i - 1] !== p - 1 && <span className="text-gray-600">...</span>}
                                                     <button
                                                         onClick={() => setCurrentPage(p)}
@@ -771,7 +771,7 @@ export default function AdminDashboard() {
                                                     >
                                                         {p}
                                                     </button>
-                                                </React.Fragment>
+                                                </Fragment>
                                             ))}
                                         <button
                                             disabled={currentPage === Math.ceil(metrics.expiring.length / rowsPerPage)}
