@@ -48,21 +48,8 @@ const seriesItems = [
 ];
 
 export default function Home() {
-  const { scrollYProgress } = useScroll();
-  const scaleX = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001
-  });
-
   return (
     <main className="min-h-screen bg-black text-white overflow-x-hidden relative">
-      {/* Barra de Progresso de Leitura */}
-      <motion.div
-        className="fixed top-0 left-0 right-0 h-1.5 bg-primary z-[100] origin-left"
-        style={{ scaleX }}
-      />
-
       <Navbar />
 
       <motion.div
