@@ -75,7 +75,9 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'expiring' | 'pix'>('overview');
     const [searchTerm, setSearchTerm] = useState('');
-    const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('all');
+    const [dateFilter, setDateFilter] = useState<'today' | 'yesterday' | 'month' | 'all' | 'custom'>('all');
+    const [customDateStart, setCustomDateStart] = useState('');
+    const [customDateEnd, setCustomDateEnd] = useState('');
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
     const [planFilter, setPlanFilter] = useState('all');
@@ -242,9 +244,22 @@ export default function AdminDashboard() {
             if (!l.createdAt) return false;
             const d = l.createdAt.toDate();
             let passDate = true;
-            if (dateFilter === 'today') passDate = d >= startOfDay;
-            else if (dateFilter === 'week') passDate = d >= startOfWeek;
-            else if (dateFilter === 'month') passDate = d >= startOfMonth;
+
+            if (dateFilter === 'today') {
+                passDate = d >= startOfDay;
+            } else if (dateFilter === 'yesterday') {
+                const startOfYesterday = new Date(startOfDay);
+                startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+                passDate = d >= startOfYesterday && d < startOfDay;
+            } else if (dateFilter === 'month') {
+                passDate = d >= startOfMonth;
+            } else if (dateFilter === 'custom') {
+                const start = customDateStart ? new Date(customDateStart + 'T00:00:00') : null;
+                const end = customDateEnd ? new Date(customDateEnd + 'T23:59:59') : null;
+                if (start && end) passDate = d >= start && d <= end;
+                else if (start) passDate = d >= start;
+                else if (end) passDate = d <= end;
+            }
 
             const passSearch = l.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 l.phone.includes(searchTerm);
@@ -255,23 +270,31 @@ export default function AdminDashboard() {
             return passDate && passSearch && passPlan && passPrice;
         });
 
-        const revToday = leads.filter(l => l.status === 'approved' && l.createdAt && l.createdAt.toDate() >= startOfDay).reduce((acc, curr) => acc + parsePrice(curr.price), 0);
-        const approvedCount = filtered.filter(l => l.status === 'approved').length;
+        const approvedFiltered = filtered.filter(l => l.status === 'approved');
+        const revFiltered = approvedFiltered.reduce((acc, curr) => acc + parsePrice(curr.price), 0);
+        const approvedCount = approvedFiltered.length;
 
         const planCounts: Record<string, number> = {};
-        filtered.forEach(l => { if (l.status === 'approved') planCounts[l.plan] = (planCounts[l.plan] || 0) + 1; });
+        approvedFiltered.forEach(l => { planCounts[l.plan] = (planCounts[l.plan] || 0) + 1; });
         const best = Object.entries(planCounts).sort((a, b) => b[1] - a[1])[0];
+
+        // Rótulo dinâmico para os cards
+        const kpiLabel = dateFilter === 'today' ? 'Hoje' :
+            dateFilter === 'yesterday' ? 'Ontem' :
+                dateFilter === 'month' ? 'Mês' :
+                    dateFilter === 'custom' ? 'Período' : 'Sempre';
 
         return {
             data: filtered.slice(0, rowsPerPage),
-            revenueToday: revToday,
-            salesToday: leads.filter(l => l.status === 'approved' && l.createdAt && l.createdAt.toDate() >= startOfDay).length,
-            leadsToday: leads.filter(l => l.createdAt && l.createdAt.toDate() >= startOfDay).length,
+            kpiLabel,
+            revenueFiltered: revFiltered,
+            salesFiltered: approvedCount,
+            leadsFiltered: filtered.length,
             conversion: filtered.length > 0 ? (approvedCount / filtered.length) * 100 : 0,
             bestPlan: best ? best[0] : 'N/A',
             expiring: leads.filter(l => l.status === 'approved').sort((a, b) => getDaysRemaining(a.createdAt, a.plan) - getDaysRemaining(b.createdAt, b.plan))
         };
-    }, [leads, searchTerm, dateFilter, rowsPerPage, planFilter, priceFilter]);
+    }, [leads, searchTerm, dateFilter, customDateStart, customDateEnd, rowsPerPage, planFilter, priceFilter]);
 
     const deleteLead = async (id: string) => {
         if (!confirm('Tem certeza que deseja excluir?')) return;
@@ -409,18 +432,33 @@ export default function AdminDashboard() {
                                     <h2 className="text-3xl font-black italic text-white tracking-tighter uppercase">Painel de <span className="text-red-600">Controle</span></h2>
                                     <p className="text-xs text-gray-500 mt-1 font-medium tracking-wide">Monitoramento em tempo real da sua operação.</p>
                                 </div>
-                                <div className="flex bg-[#0a0a0a] p-1 rounded-xl border border-white/5">
-                                    {['today', 'week', 'month', 'all'].map(f => (
-                                        <button key={f} onClick={() => setDateFilter(f as any)} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${dateFilter === f ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-white'}`}>{f}</button>
-                                    ))}
+                                <div className="flex flex-wrap items-center gap-4">
+                                    <div className="flex bg-[#0a0a0a] p-1 rounded-xl border border-white/5">
+                                        {[
+                                            { id: 'today', label: 'Hoje' },
+                                            { id: 'yesterday', label: 'Ontem' },
+                                            { id: 'month', label: 'Mês' },
+                                            { id: 'all', label: 'Sempre' },
+                                            { id: 'custom', label: 'Personalizado' }
+                                        ].map(f => (
+                                            <button key={f.id} onClick={() => setDateFilter(f.id as any)} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${dateFilter === f.id ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-white'}`}>{f.label}</button>
+                                        ))}
+                                    </div>
+                                    {dateFilter === 'custom' && (
+                                        <div className="flex items-center gap-2 animate-in slide-in-from-left-4 duration-300">
+                                            <input type="date" value={customDateStart} onChange={e => setCustomDateStart(e.target.value)} className="bg-black border border-white/10 rounded-lg p-2 text-[10px] text-white outline-none focus:border-red-600" />
+                                            <span className="text-gray-500 text-[10px]">ATÉ</span>
+                                            <input type="date" value={customDateEnd} onChange={e => setCustomDateEnd(e.target.value)} className="bg-black border border-white/10 rounded-lg p-2 text-[10px] text-white outline-none focus:border-red-600" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
                             {/* KPI Grid Premium */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                                 {[
-                                    { label: 'Hoje', value: formatCurrency(metrics.revenueToday), sub: `${metrics.salesToday} vendas`, icon: DollarSign, color: 'from-red-600 to-red-900' },
-                                    { label: 'Leads', value: metrics.leadsToday, sub: 'Visitantes', icon: Users, color: 'from-orange-600 to-red-600' },
+                                    { label: metrics.kpiLabel, value: formatCurrency(metrics.revenueFiltered), sub: `${metrics.salesFiltered} vendas`, icon: DollarSign, color: 'from-red-600 to-red-900' },
+                                    { label: 'Leads', value: metrics.leadsFiltered, sub: 'Visitantes', icon: Users, color: 'from-orange-600 to-red-600' },
                                     { label: 'Conversão', value: `${metrics.conversion.toFixed(1)}%`, sub: 'Taxa AP', icon: Percent, color: 'from-red-600 to-pink-600' },
                                     { label: 'Top Plano', value: metrics.bestPlan, sub: 'Lidêr vendas', icon: Star, color: 'from-red-600 to-black' }
                                 ].map((kpi, i) => (
