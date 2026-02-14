@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useScroll, useSpring } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import PriceComparison from '@/components/PriceComparison';

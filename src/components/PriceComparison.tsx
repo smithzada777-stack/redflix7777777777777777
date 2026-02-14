@@ -157,7 +157,11 @@ export default function PriceComparison() {
                             <div className="mt-auto mb-2 relative z-10 w-full px-8">
                                 <div className="bg-neutral-100/5 rounded-xl p-3 border border-primary/20 mb-2">
                                     <p className="text-[10px] text-gray-400 mb-2 uppercase tracking-widest font-bold">Inclui conteúdo de:</p>
-                                    <div className="flex justify-center gap-6 overflow-hidden">
+                                    <div className="flex justify-center gap-6 overflow-hidden relative">
+                                        {/* SOMBRAS LATERAIS */}
+                                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#1a0505] to-transparent z-20 pointer-events-none" />
+                                        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-black to-transparent z-20 pointer-events-none" />
+
                                         {/* LOGOS EM VELOCIDADE DE 2.5s (TURBO) */}
                                         <div className="animate-marquee flex items-center gap-8" style={{ animationDuration: '2.5s' }}>
                                             {competitors.map(c => <CompetitorLogo key={c.name} name={c.name} className="h-6 w-auto" />)}

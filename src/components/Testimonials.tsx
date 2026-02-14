@@ -1,19 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { Star, CheckCircle } from 'lucide-react';
 
 const testimonials = [
-    { id: 1, name: 'Marcos Vinicius', text: 'O acesso chegou em menos de 1 minuto no meu email, o sistema automático deles é real!', color: 'from-blue-600 to-blue-400' },
-    { id: 2, name: 'Renata Oliveira', text: 'Suporte nota 10, me ajudaram a configurar na minha Smart TV rápido e sem enrolação.', color: 'from-pink-600 to-pink-400' },
-    { id: 3, name: 'Dr. Ricardo Menezes', text: 'Serviço profissional e de alta performance. Extremamente estável para quem não quer dor de cabeça.', color: 'from-green-600 to-green-400' },
-    { id: 4, name: 'Jeferson Silva', text: 'Os jogos do Brasileirão e a NBA rodam liso demais. Qualidade 4K de verdade!', color: 'from-zinc-600 to-zinc-400' },
-    { id: 5, name: 'Bruna Santos', text: 'Os desenho pra criançada salvou muito aqui em casa kkk tem muita coisa (Netflix, Disney+, etc).', color: 'from-purple-600 to-purple-400' },
-    { id: 6, name: 'Dona Maria Luiza', text: 'Muito fácil de usar, até eu que não entendo nada de tecnologia já tô assistindo minhas novelas.', color: 'from-yellow-600 to-yellow-400' },
-    { id: 7, name: 'Anderson Costa', text: 'Tava meio na dúvida, mas depois de testar eu vi que vale cada centavo. Top demais.', color: 'from-emerald-600 to-emerald-400' },
-    { id: 8, name: 'Felipe Almeida', text: 'Melhor custo-benefício que já vi. Toda a família usa em telas diferentes ao mesmo tempo.', color: 'from-orange-600 to-orange-400' },
-    { id: 9, name: 'Sandra Pires', text: 'A variedade de canais e filmes é absurda. Antigamente eu pagava 3 streamings pra ter metade disso.', color: 'from-red-600 to-red-400' },
+    { id: 1, name: 'Marcos Vinicius', stars: 5, text: 'O acesso chegou em menos de 1 minuto no meu email, o sistema automático deles é real!', color: 'from-blue-600 to-blue-400' },
+    { id: 2, name: 'Renata Oliveira', stars: 5, text: 'Suporte nota 10, me ajudaram a configurar na minha Smart TV rápido e sem enrolação.', color: 'from-pink-600 to-pink-400' },
+    { id: 3, name: 'Dr. Ricardo Menezes', stars: 4, text: 'Serviço profissional e de alta performance. Extremamente estável para quem não quer dor de cabeça.', color: 'from-green-600 to-green-400' },
+    { id: 4, name: 'Jeferson Silva', stars: 5, text: 'Os jogos do Brasileirão e a NBA rodam liso demais. Qualidade 4K de verdade!', color: 'from-zinc-600 to-zinc-400' },
+    { id: 5, name: 'Bruna Santos', stars: 5, text: 'Os desenho pra criançada salvou muito aqui em casa kkk tem muita coisa (Netflix, Disney+, etc).', color: 'from-purple-600 to-purple-400' },
+    { id: 6, name: 'Dona Maria Luiza', stars: 4, text: 'Muito fácil de usar, até eu que não entendo nada de tecnologia já tô assistindo minhas novelas.', color: 'from-yellow-600 to-yellow-400' },
+    { id: 7, name: 'Anderson Costa', stars: 5, text: 'Tava meio na dúvida, mas depois de testar eu vi que vale cada centavo. Top demais.', color: 'from-emerald-600 to-emerald-400' },
+    { id: 8, name: 'Felipe Almeida', stars: 3, text: 'O app é bom, só tive um probleminha no começo mas o suporte resolveu em 5 minutos. Vale a pena.', color: 'from-orange-600 to-orange-400' },
+    { id: 9, name: 'Sandra Pires', stars: 5, text: 'A variedade de canais e filmes é absurda. Antigamente eu pagava 3 streamings pra ter metade disso.', color: 'from-red-600 to-red-400' },
 ];
 
 const ProfileAvatar = ({ name, color, size = 'md' }: { name: string, color: string, size?: 'sm' | 'md' }) => {
@@ -27,7 +25,7 @@ const ProfileAvatar = ({ name, color, size = 'md' }: { name: string, color: stri
 
 export default function Testimonials() {
     return (
-        <section className="pt-16 pb-24 bg-black relative overflow-hidden">
+        <section className="pt-16 pb-20 bg-black relative overflow-hidden">
             {/* Cinematic Atmosfera */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 blur-[130px] rounded-full pointer-events-none" />
 
@@ -43,7 +41,11 @@ export default function Testimonials() {
                     <p className="text-gray-500 text-xs md:text-sm font-bold uppercase tracking-[0.15em]">Relatos reais de quem já economiza com a RedFlix há meses</p>
                 </div>
 
-                <div className="relative w-full">
+                <div className="relative w-full overflow-hidden">
+                    {/* SOMBRAS LATERAIS PARA NÃO PARECER CORTADO */}
+                    <div className="absolute left-0 top-0 bottom-0 w-24 md:w-64 bg-gradient-to-r from-black via-black/50 to-transparent z-20 pointer-events-none" />
+                    <div className="absolute right-0 top-0 bottom-0 w-24 md:w-64 bg-gradient-to-l from-black via-black/50 to-transparent z-20 pointer-events-none" />
+
                     {/* Versão MOBILE: Cards Dark Empilhados */}
                     <div className="md:hidden flex flex-col gap-4 py-4 px-2">
                         {testimonials.slice(0, 6).map((t) => (
@@ -55,7 +57,11 @@ export default function Testimonials() {
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex gap-0.5">
                                             {[...Array(5)].map((_, starIdx) => (
-                                                <Star key={starIdx} size={10} className="text-primary fill-primary" />
+                                                <Star
+                                                    key={starIdx}
+                                                    size={10}
+                                                    className={starIdx < t.stars ? "text-primary fill-primary" : "text-gray-700"}
+                                                />
                                             ))}
                                         </div>
                                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20">
@@ -90,7 +96,11 @@ export default function Testimonials() {
                                     <div className="flex items-center justify-between mb-8">
                                         <div className="flex gap-1.5">
                                             {[...Array(5)].map((_, starIdx) => (
-                                                <Star key={starIdx} size={16} className="text-primary fill-primary group-hover/card:scale-110 transition-transform" />
+                                                <Star
+                                                    key={starIdx}
+                                                    size={16}
+                                                    className={`${starIdx < t.stars ? "text-primary fill-primary" : "text-gray-700"} group-hover/card:scale-110 transition-transform`}
+                                                />
                                             ))}
                                         </div>
                                         <div className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 flex items-center gap-2">
@@ -121,7 +131,7 @@ export default function Testimonials() {
 
                 <div className="mt-16 text-center space-y-4">
                     <div className="h-[1px] w-32 bg-gradient-to-r from-transparent via-primary/30 to-transparent mx-auto mb-8" />
-                    <p className="text-[11px] font-black uppercase tracking-[0.5em] text-gray-600 italic">Junte-se à milhares de clientes satisfeitos</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.5em] text-gray-600 italic">Junte-se aos +{testimonials.length * 1000} clientes satisfeitos</p>
                     <div className="flex justify-center gap-1">
                         {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-primary fill-primary opacity-20" />)}
                     </div>

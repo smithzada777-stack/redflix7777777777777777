@@ -38,8 +38,8 @@ export default function ContentCarousel({ title, items, delay = 0 }: CarouselPro
                 onMouseLeave={() => setIsPaused(false)}
             >
                 {/* Lateral Blurs */}
-                <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-black to-transparent z-20 pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-black to-transparent z-20 pointer-events-none" />
+                <div className="absolute left-0 top-0 bottom-0 w-24 md:w-48 bg-gradient-to-r from-black via-black/80 to-transparent z-20 pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-24 md:w-48 bg-gradient-to-l from-black via-black/80 to-transparent z-20 pointer-events-none" />
 
                 {/* Carousel Wrapper */}
                 <div className="flex w-full">
