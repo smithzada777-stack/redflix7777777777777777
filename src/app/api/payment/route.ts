@@ -80,12 +80,14 @@ export async function POST(req: Request) {
         // 2. Update lead if provided via Admin SDK
         if (leadId && leadId !== 'new') {
             try {
+                const isRenewal = origin === 'painel-admin' || body.isRenewal === true;
                 await adminDb.collection('leads').doc(leadId).update({
                     transactionId: transactionId,
                     pixCode: data.qr_code,
-                    status: 'pending_payment'
+                    status: 'pending_payment',
+                    isRenewal: isRenewal // Marca se é renovação para o webhook
                 });
-                console.log(`[PIX API] Lead ${leadId} atualizado.`);
+                console.log(`[PIX API] Lead ${leadId} atualizado (Renovação: ${isRenewal}).`);
             } catch (dbError) {
                 console.error('Erro ao atualizar lead:', dbError);
             }

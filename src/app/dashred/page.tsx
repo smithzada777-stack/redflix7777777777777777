@@ -219,17 +219,35 @@ export default function AdminDashboard() {
         const base = type === 'monthly' ? 29.9 : type === 'trimestral' ? 79.9 : 149.9;
         const name = type === 'monthly' ? 'Mensal' : type === 'trimestral' ? 'Trimestral' : 'Semestral';
         const final = (base * (1 - discount / 100)).toFixed(2).replace('.', ',');
-        const link = `${window.location.origin}/checkout/simple?plan=${encodeURIComponent(name)}&price=${final}&leadId=${selectedLead.id}`;
+
+        // Links curtíssimos: l=leadId, p=plano(m,t,s), d=desconto
+        const pCode = type === 'monthly' ? 'm' : type === 'trimestral' ? 't' : 's';
+        const link = `${window.location.origin}/checkout/simple?l=${selectedLead.id}&p=${pCode}&d=${discount}`;
         const days = getDaysRemaining(selectedLead.createdAt, selectedLead.plan);
 
+        const hasDiscount = discount > 0;
         const templates = {
-            aggressive: `⚠️ ÚLTIMO AVISO: Seu acesso RedFlix será cortado em ${days} dias. Não perca seus filmes e séries favoritos. Garanti uma última chance com ${discount}% OFF: ${link}`,
-            informal: `E aí! Tudo beleza? Vi aqui que seu RedFlix tá pra vencer. Pra não ficar sem seus filmes, te descolei um cupom de ${discount}% de desconto aqui: ${link} TMJ! 🍿`,
-            formal: `Prezado(a), informamos que sua assinatura RedFlix expira em ${days} dias. Para manter seu acesso sem interrupções, disponibilizamos uma oferta de renovação com ${discount}% de desconto: ${link}`,
-            fun: `🎬 Luz, câmera... quase pausa! Seu RedFlix tá vencendo em ${days} dias, mas a maratona não pode parar! Pegue aqui ${discount}% OFF e dê o play na renovação: ${link} 🍿`,
-            funny: `Opa! Seus vizinhos já estão reclamando que você parou de assistir série? 😂 Seu RedFlix vence em ${days} dias! Resolve isso logo com ${discount}% de desconto e volta pro sofá: ${link}`,
-            scarcity: `🔥 SÓ HOJE: Sua conta RedFlix vence em ${days} dias e essa oferta de ${discount}% OFF expira em poucas horas. Garanta seu acesso agora: ${link}`,
-            short: `Sua RedFlix vence em ${days} dias. Renove agora com ${discount}% OFF aqui: ${link}`
+            aggressive: hasDiscount
+                ? `⚠️ ÚLTIMO AVISO: Seu acesso RedFlix será cortado em ${days} dias. Garanti uma última chance com ${discount}% OFF: ${link}`
+                : `⚠️ ÚLTIMO AVISO: Seu acesso RedFlix será cortado em ${days} dias. Renove agora para não perder seus filmes: ${link}`,
+            informal: hasDiscount
+                ? `E aí! Vi aqui que seu RedFlix tá pra vencer. Te descolei um cupom de ${discount}% de desconto aqui: ${link} TMJ! 🍿`
+                : `E aí! Tudo beleza? Vi aqui que seu RedFlix tá pra vencer. Pra não ficar sem seus filmes, renova aqui: ${link} TMJ! 🍿`,
+            formal: hasDiscount
+                ? `Prezado(a), informamos que sua assinatura RedFlix expira em ${days} dias. Para manter seu acesso, disponibilizamos uma oferta de renovação com ${discount}% de desconto: ${link}`
+                : `Prezado(a), informamos que sua assinatura RedFlix expira em ${days} dias. Para manter seu acesso sem interrupções, realize a renovação pelo link: ${link}`,
+            fun: hasDiscount
+                ? `🎬 Luz, câmera... quase pausa! Seu RedFlix tá vencendo em ${days} dias! Pegue aqui ${discount}% OFF e dê o play na renovação: ${link} 🍿`
+                : `🎬 Luz, câmera... quase pausa! Seu RedFlix tá vencendo em ${days} dias! Não deixe a maratona parar, renove aqui: ${link} 🍿`,
+            funny: hasDiscount
+                ? `Opa! Seus vizinhos já estão reclamando que você parou de assistir série? 😂 Resolve isso logo com ${discount}% de desconto: ${link}`
+                : `Opa! Seus vizinhos já estão reclamando que você parou de assistir série? 😂 Resolve isso logo e volta pro sofá: ${link}`,
+            scarcity: hasDiscount
+                ? `🔥 SÓ HOJE: Sua conta RedFlix vence em ${days} dias e essa oferta de ${discount}% OFF expira em poucas horas: ${link}`
+                : `🔥 AVISO: Sua conta RedFlix vence em ${days} dias. Garante sua renovação agora: ${link}`,
+            short: hasDiscount
+                ? `Sua RedFlix vence em ${days} dias. Renove agora com ${discount}% OFF aqui: ${link}`
+                : `Sua RedFlix vence em ${days} dias. Renove agora aqui: ${link}`
         };
 
         return {
@@ -596,12 +614,17 @@ export default function AdminDashboard() {
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-6 text-center">
-                                                        <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${lead.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'}`}>{lead.status === 'approved' ? 'Aprovado' : 'Pendente'}</span>
+                                                        <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${lead.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                                                                lead.status === 'renewed' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                                                                    'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
+                                                            }`}>
+                                                            {lead.status === 'approved' ? 'Aprovado' : lead.status === 'renewed' ? 'Renovado' : 'Pendente'}
+                                                        </span>
                                                     </td>
                                                     <td className="px-8 py-6">
                                                         <div className="flex justify-end gap-3 md:translate-x-4 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-x-0 transition-all">
                                                             <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="p-2.5 bg-green-600/10 hover:bg-green-600/20 rounded-xl transition-all border border-green-600/20"><MessageCircle size={16} className="text-green-500" /></a>
-                                                            <button onClick={() => updateDoc(doc(db, "leads", lead.id), { status: lead.status === 'approved' ? 'pending' : 'approved' })} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5"><CheckCircle2 size={16} className="text-green-500" /></button>
+                                                            <button onClick={() => updateDoc(doc(db, "leads", lead.id), { status: lead.status === 'approved' ? 'renewed' : 'approved' })} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5"><CheckCircle2 size={16} className={lead.status === 'renewed' ? "text-blue-500" : "text-green-500"} /></button>
                                                             <button onClick={() => deleteLead(lead.id)} className="p-2.5 bg-red-600/10 hover:bg-red-600 rounded-xl transition-all border border-red-600/20 group/del"><Trash2 size={16} className="text-red-500 group-hover/del:text-white" /></button>
                                                         </div>
                                                     </td>
@@ -806,10 +829,21 @@ export default function AdminDashboard() {
                                                 <div className="bg-white/5 p-6 rounded-2xl border border-white/5 space-y-4">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Margem de Desconto</span>
-                                                        <span className="text-2xl font-black text-red-600 italic tracking-tighter">{discount}% OFF</span>
+                                                        <span className={`text-2xl font-black italic tracking-tighter ${discount === 0 ? 'text-gray-400' : 'text-red-600'}`}>{discount === 0 ? 'P preço base' : `${discount}% OFF`}</span>
                                                     </div>
-                                                    <input type="range" min="5" max="50" step="5" value={discount} onChange={e => setDiscount(parseInt(e.target.value))} className="w-full h-2 bg-black rounded-full appearance-none cursor-pointer accent-red-600" />
-                                                    <div className="flex justify-between text-[7px] font-black text-gray-700 tracking-widest uppercase"><span>5%</span><span>25%</span><span>50%</span></div>
+                                                    <div className="flex gap-2 mb-2">
+                                                        {[0, 5, 10, 15, 20, 25, 50].map(v => (
+                                                            <button
+                                                                key={v}
+                                                                onClick={() => setDiscount(v)}
+                                                                className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all border ${discount === v ? 'bg-red-600 border-red-600 text-white' : 'bg-black/40 border-white/10 text-gray-500'}`}
+                                                            >
+                                                                {v === 0 ? 'Sem Promo' : `${v}%`}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <input type="range" min="0" max="50" step="5" value={discount} onChange={e => setDiscount(parseInt(e.target.value))} className="w-full h-2 bg-black rounded-full appearance-none cursor-pointer accent-red-600" />
+                                                    <div className="flex justify-between text-[7px] font-black text-gray-700 tracking-widest uppercase"><span>0%</span><span>25%</span><span>50%</span></div>
                                                 </div>
 
                                                 <div className="bg-white/5 p-6 rounded-2xl border border-white/5 space-y-4">

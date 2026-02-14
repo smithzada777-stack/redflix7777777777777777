@@ -23,16 +23,35 @@ const isValidGmail = (e: string) => e.toLowerCase().endsWith('@gmail.com');
 function SimpleCheckoutContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const planName = searchParams.get('plan') || 'Plano Personalizado';
-    const planPriceStr = searchParams.get('price') || '0,00';
-    const leadIdParam = searchParams.get('leadId');
+
+    // Novos parâmetros curtos (Encurtador de Link)
+    const lCode = searchParams.get('l'); // leadId
+    const pCode = searchParams.get('p'); // plano (m, t, s)
+    const dCode = searchParams.get('d'); // desconto (0, 5, 10...)
+
+    // Lógica de Preço e Nome do Plano (Prioridade para os códigos curtos)
+    let planName = searchParams.get('plan') || 'Plano Personalizado';
+    let planPriceStr = searchParams.get('price') || '0,00';
+
+    if (pCode) {
+        if (pCode === 'm') planName = 'Plano Mensal';
+        else if (pCode === 't') planName = 'Plano Trimestral';
+        else if (pCode === 's') planName = 'Plano Semestral';
+
+        const base = pCode === 'm' ? 29.90 : pCode === 't' ? 79.90 : 149.90;
+        const discount = parseInt(dCode || '0');
+        const final = base * (1 - discount / 100);
+        planPriceStr = final.toFixed(2).replace('.', ',');
+    }
+
+    const leadIdParam = lCode || searchParams.get('leadId');
 
     const [formData, setFormData] = useState({
         email: '',
         phone: ''
     });
 
-    // Steps: 0 = Offer Summary (only if leadId), 1 = Form, 2 = Pix, 3 = Success
+    // Steps: 0 = Offer Summary (pula formulário), 1 = Form (novo lead), 2 = Pix, 3 = Success
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [initializing, setInitializing] = useState(!!leadIdParam);
@@ -87,7 +106,7 @@ function SimpleCheckoutContent() {
                         phone: data.phone || ''
                     });
                     setCurrentLeadId(leadIdParam);
-                    setStep(0); // Show summary for returning leads
+                    setStep(0); // Pula direto para o resumo se já temos o lead (SEM PEDIR DADOS)
                 }
             } catch (error) {
                 console.error("[Checkout] Erro ao buscar lead:", error);
@@ -215,7 +234,8 @@ function SimpleCheckoutContent() {
                 amount: finalPrice,
                 description: `Assinatura - ${planName}`,
                 payerEmail: formData.email,
-                leadId: currentLeadId
+                leadId: currentLeadId,
+                isRenewal: !!currentLeadId // Flag para o webhook saber que é renovação
             });
 
             const { qrcode_content, qrcode_image_url, transaction_id } = response.data;

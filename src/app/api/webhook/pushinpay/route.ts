@@ -60,12 +60,13 @@ export async function POST(req: Request) {
                         const leadData = doc.data();
 
                         try {
+                            const newStatus = leadData.isRenewal ? 'renewed' : 'approved';
                             // Primeiro garante a atualização no Banco (Dashboard)
                             await doc.ref.update({
-                                status: 'approved',
+                                status: newStatus,
                                 paidAt: new Date().toISOString()
                             });
-                            console.log(`[WEBHOOK] Lead ${doc.id} ATUALIZADO PARA APPROVED no banco.`);
+                            console.log(`[WEBHOOK] Lead ${doc.id} ATUALIZADO PARA ${newStatus.toUpperCase()} no banco.`);
                         } catch (dbErr: any) {
                             console.error(`[WEBHOOK] Erro ao atualizar lead no banco: ${dbErr.message}`);
                         }
