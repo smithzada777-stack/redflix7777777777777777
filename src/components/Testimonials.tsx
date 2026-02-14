@@ -31,10 +31,6 @@ export default function Testimonials() {
 
             <div className="container mx-auto px-6 relative z-10">
                 <div className="max-w-4xl mx-auto text-center mb-12 px-4">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 mb-6 group transition-all">
-                        <Star size={12} className="text-primary fill-primary animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Prova Social Real</span>
-                    </div>
                     <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tighter text-white uppercase italic">
                         Vê o que a <span className="text-primary italic drop-shadow-[0_0_15px_rgba(229,9,20,0.4)]">galera</span> tá achando:
                     </h2>
