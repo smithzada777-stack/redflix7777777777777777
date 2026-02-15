@@ -934,49 +934,82 @@ export default function AdminDashboard() {
                                                 </div>
                                             </div>
 
-                                            {/* Tabela de Opções */}
+                                            {/* Tabela/Grid de Opções Responsivo */}
                                             <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
-                                                <table className="w-full text-left">
-                                                    <thead className="bg-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 border-b border-white/5">
-                                                        <tr>
-                                                            <th className="px-6 py-4">Opção</th>
-                                                            <th className="px-6 py-4">Prévia da Mensagem</th>
-                                                            <th className="px-6 py-4 text-right">Ação</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-white/5">
-                                                        {['monthly', 'trimestral', 'semestral'].map(t => {
-                                                            const p = getProposal(t);
-                                                            return (
-                                                                <tr key={t} className="hover:bg-white/[0.01] transition-colors group">
-                                                                    <td className="px-6 py-6 min-w-[140px]">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <span className="p-2 bg-red-600/10 rounded-lg text-red-600"><Star size={14} /></span>
-                                                                            <span className="text-[10px] font-black uppercase tracking-widest text-white">{t === 'monthly' ? 'Mensal' : t === 'trimestral' ? 'Trimestral' : 'Semestral'}</span>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td className="px-6 py-6">
-                                                                        <div className="bg-black/40 p-3 rounded-lg border border-white/5 max-w-md">
-                                                                            <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-2">"{p.creative}"</p>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td className="px-6 py-6">
-                                                                        <div className="flex justify-end gap-2">
-                                                                            <button onClick={() => { navigator.clipboard.writeText(p.link); alert('Link Copiado!'); }} className="p-2 text-gray-500 hover:text-white transition-colors"><Copy size={16} /></button>
-                                                                            <a
-                                                                                href={`https://wa.me/${selectedLead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(p.creative)}`}
-                                                                                target="_blank"
-                                                                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase flex items-center gap-2 shadow-lg shadow-green-600/20"
-                                                                            >
-                                                                                <Send size={12} /> ENVIAR
-                                                                            </a>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                </table>
+                                                {/* Desktop: Table */}
+                                                <div className="hidden md:block">
+                                                    <table className="w-full text-left">
+                                                        <thead className="bg-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 border-b border-white/5">
+                                                            <tr>
+                                                                <th className="px-6 py-4">Opção</th>
+                                                                <th className="px-6 py-4">Prévia da Mensagem</th>
+                                                                <th className="px-6 py-4 text-right">Ação</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-white/5">
+                                                            {['monthly', 'trimestral', 'semestral'].map(t => {
+                                                                const p = getProposal(t);
+                                                                return (
+                                                                    <tr key={t} className="hover:bg-white/[0.01] transition-colors group">
+                                                                        <td className="px-6 py-6 min-w-[140px]">
+                                                                            <div className="flex items-center gap-3">
+                                                                                <span className="p-2 bg-red-600/10 rounded-lg text-red-600"><Star size={14} /></span>
+                                                                                <span className="text-[10px] font-black uppercase tracking-widest text-white">{t === 'monthly' ? 'Mensal' : t === 'trimestral' ? 'Trimestral' : 'Semestral'}</span>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="px-6 py-6">
+                                                                            <div className="bg-black/40 p-3 rounded-lg border border-white/5 max-w-md">
+                                                                                <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-2">"{p.creative}"</p>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="px-6 py-6">
+                                                                            <div className="flex justify-end gap-2">
+                                                                                <button onClick={() => { navigator.clipboard.writeText(p.link); alert('Link Copiado!'); }} className="p-2 text-gray-500 hover:text-white transition-colors"><Copy size={16} /></button>
+                                                                                <a
+                                                                                    href={`https://wa.me/${selectedLead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(p.creative)}`}
+                                                                                    target="_blank"
+                                                                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase flex items-center gap-2 shadow-lg shadow-green-600/20"
+                                                                                >
+                                                                                    <Send size={12} /> ENVIAR
+                                                                                </a>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                                {/* Mobile: Cards */}
+                                                <div className="md:hidden divide-y divide-white/5">
+                                                    {['monthly', 'trimestral', 'semestral'].map(t => {
+                                                        const p = getProposal(t);
+                                                        return (
+                                                            <div key={t} className="p-6 space-y-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className="p-2 bg-red-600/10 rounded-lg text-red-600"><Star size={14} /></span>
+                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-white">{t === 'monthly' ? 'Mensal' : t === 'trimestral' ? 'Trimestral' : 'Semestral'}</span>
+                                                                    </div>
+                                                                    <div className="flex gap-2">
+                                                                        <button onClick={() => { navigator.clipboard.writeText(p.link); alert('Link Copiado!'); }} className="p-2.5 bg-white/5 text-gray-400 rounded-lg"><Copy size={16} /></button>
+                                                                        <a
+                                                                            href={`https://wa.me/${selectedLead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(p.creative)}`}
+                                                                            target="_blank"
+                                                                            className="bg-green-600 text-white p-2.5 rounded-lg"
+                                                                        >
+                                                                            <Send size={16} />
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="bg-black/40 p-4 rounded-xl border border-white/5">
+                                                                    <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-3">"{p.creative}"</p>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
