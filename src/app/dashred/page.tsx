@@ -309,6 +309,8 @@ export default function AdminDashboard() {
 
             const passPlan = planFilter === 'all' || l.plan === planFilter;
             const passPrice = !priceFilter || String(l.price).includes(priceFilter);
+
+            // Lógica Simplificada de Origem
             const passOrigin = originFilter === 'all' || l.origin === originFilter;
 
             return passDate && passSearch && passPlan && passPrice && passOrigin;
@@ -326,7 +328,7 @@ export default function AdminDashboard() {
         const kpiLabel = dateFilter === 'today' ? 'Hoje' :
             dateFilter === 'yesterday' ? 'Ontem' :
                 dateFilter === 'month' ? 'Mês' :
-                    dateFilter === 'custom' ? 'Período' : 'Sempre';
+                    dateFilter === 'custom' ? 'Período' : 'Todo';
 
         return {
             data: filtered,
@@ -339,7 +341,7 @@ export default function AdminDashboard() {
             expiring: approvedFiltered.sort((a, b) => getDaysRemaining(a.createdAt, a.plan) - getDaysRemaining(b.createdAt, b.plan)),
             expiringTotal: leads.filter(l => l.status === 'approved' || l.status === 'renewed').length
         };
-    }, [leads, searchTerm, dateFilter, customDateStart, customDateEnd, rowsPerPage, planFilter, priceFilter]);
+    }, [leads, searchTerm, dateFilter, customDateStart, customDateEnd, rowsPerPage, planFilter, priceFilter, originFilter]);
 
     const deleteLead = async (id: string) => {
         if (!confirm('Tem certeza que deseja excluir?')) return;
@@ -489,20 +491,14 @@ export default function AdminDashboard() {
                     {activeTab !== 'pix' && (
                         <div className="flex flex-col items-center text-center space-y-8 mb-16 px-4">
                             <div className="space-y-4">
-                                <div className="inline-block px-4 py-1.5 rounded-full bg-red-600/10 border border-red-600/20 text-red-600 text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">
-                                    Monitoramento em Tempo Real
-                                </div>
                                 <h2 className="text-4xl md:text-6xl font-black italic text-white tracking-tighter uppercase leading-none">
                                     Painel de <span className="text-red-600">Controle</span>
                                 </h2>
-                                <p className="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-widest max-w-xl mx-auto opacity-70">
-                                    Gestão unificada de acessos, vendas e renovações de todos os seus projetos.
-                                </p>
                             </div>
 
-                            {/* SITE TABS - PREMIUM & RESPONSIVE */}
-                            <div className="w-full flex justify-center">
-                                <div className="flex items-center gap-2 bg-[#0a0a0a] p-2 rounded-[2rem] border border-white/10 shadow-2xl overflow-x-auto max-w-full scrollbar-hide no-scrollbar">
+                            {/* SITE TABS & PERÍODO - INTEGRATED PREMIUM */}
+                            <div className="w-full flex flex-col md:flex-row items-center justify-center gap-4">
+                                <div className="flex items-center gap-1 bg-[#0a0a0a] p-1.5 rounded-[2rem] border border-white/10 shadow-2xl overflow-x-auto max-w-full no-scrollbar">
                                     {[
                                         { id: 'all', label: '📊 Geral' },
                                         { id: 'renove', label: '♻️ Renove' },
@@ -512,7 +508,7 @@ export default function AdminDashboard() {
                                         <button
                                             key={site.id}
                                             onClick={() => setOriginFilter(site.id)}
-                                            className={`whitespace-nowrap px-6 py-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2 ${originFilter === site.id
+                                            className={`whitespace-nowrap px-5 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 ${originFilter === site.id
                                                 ? 'bg-red-600 text-white shadow-[0_0_20px_rgba(229,9,20,0.4)]'
                                                 : 'text-gray-500 hover:text-white hover:bg-white/5'
                                                 }`}
@@ -521,66 +517,60 @@ export default function AdminDashboard() {
                                         </button>
                                     ))}
                                 </div>
-                            </div>
 
-                            {/* PERÍODO DROPDOWN - PREMIUM */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
-                                    className="flex items-center gap-4 px-10 py-5 rounded-[2rem] bg-black border border-white/10 hover:border-red-600/50 hover:bg-white/5 transition-all group shadow-2xl"
-                                >
-                                    <div className="text-left">
-                                        <p className="text-[8px] text-gray-600 font-black uppercase tracking-[0.2em] leading-none mb-2">Filtrar por Período</p>
-                                        <div className="flex items-center gap-3">
-                                            <Calendar size={16} className="text-red-600" />
-                                            <span className="text-[12px] font-black uppercase tracking-widest text-white italic">
-                                                {dateFilter === 'today' ? 'Hoje' :
-                                                    dateFilter === 'yesterday' ? 'Ontem' :
-                                                        dateFilter === 'month' ? 'Mês Atual' :
-                                                            dateFilter === 'custom' ? 'Personalizado' : 'Todo o Período'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="w-px h-8 bg-white/10 mx-2" />
-                                    <ChevronDown size={20} className={`text-gray-500 transition-transform duration-500 ${isDateDropdownOpen ? 'rotate-180' : ''}`} />
-                                </button>
+                                {/* PERÍODO DROPDOWN - COMPACT VERSION */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
+                                        className="flex items-center gap-3 px-6 py-3 rounded-full bg-[#0a0a0a] border border-white/10 hover:border-red-600/50 hover:bg-white/5 transition-all group shadow-2xl"
+                                    >
+                                        <Calendar size={14} className="text-red-600" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-white italic">
+                                            {dateFilter === 'today' ? 'Hoje' :
+                                                dateFilter === 'yesterday' ? 'Ontem' :
+                                                    dateFilter === 'month' ? 'Mês' :
+                                                        dateFilter === 'custom' ? 'Período' : 'Tudo'}
+                                        </span>
+                                        <ChevronDown size={14} className={`text-gray-500 transition-transform duration-500 ${isDateDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </button>
 
-                                {isDateDropdownOpen && (
-                                    <>
-                                        <div className="fixed inset-0 z-[80]" onClick={() => setIsDateDropdownOpen(false)} />
-                                        <div className="absolute top-full mt-6 left-1/2 -translate-x-1/2 w-80 bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-4 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] z-[90] animate-in fade-in slide-in-from-top-4 duration-300 backdrop-blur-3xl">
-                                            {[
-                                                { id: 'today', label: 'Hoje' },
-                                                { id: 'yesterday', label: 'Ontem' },
-                                                { id: 'month', label: 'Mês Atual' },
-                                                { id: 'all', label: 'Todo o Período' },
-                                                { id: 'custom', label: 'Personalizado' }
-                                            ].map(f => (
-                                                <button
-                                                    key={f.id}
-                                                    onClick={() => { setDateFilter(f.id as any); setIsDateDropdownOpen(false); }}
-                                                    className={`w-full text-left px-6 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all mb-1 last:mb-0 ${dateFilter === f.id ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                                        }`}
-                                                >
-                                                    {f.label}
-                                                </button>
-                                            ))}
+                                    {isDateDropdownOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-[80]" onClick={() => setIsDateDropdownOpen(false)} />
+                                            <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-64 bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-3 shadow-2xl z-[90] animate-in fade-in slide-in-from-top-4 duration-300 backdrop-blur-3xl">
+                                                {[
+                                                    { id: 'today', label: 'Hoje' },
+                                                    { id: 'yesterday', label: 'Ontem' },
+                                                    { id: 'month', label: 'Mês Atual' },
+                                                    { id: 'all', label: 'Todo o Período' },
+                                                    { id: 'custom', label: 'Personalizado' }
+                                                ].map(f => (
+                                                    <button
+                                                        key={f.id}
+                                                        onClick={() => { setDateFilter(f.id as any); setIsDateDropdownOpen(false); }}
+                                                        className={`w-full text-left px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all mb-1 last:mb-0 ${dateFilter === f.id ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                                            }`}
+                                                    >
+                                                        {f.label}
+                                                    </button>
+                                                ))}
 
-                                            {dateFilter === 'custom' && (
-                                                <div className="mt-4 p-5 bg-black/60 rounded-3xl border border-white/5 space-y-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[9px] font-black text-gray-600 uppercase ml-2 tracking-widest">Data Inicial</label>
-                                                        <input type="date" value={customDateStart} onChange={e => setCustomDateStart(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl p-4 text-[11px] text-white outline-none focus:border-red-600 transition-colors" />
+                                                {dateFilter === 'custom' && (
+                                                    <div className="mt-3 p-4 bg-black/60 rounded-2xl border border-white/5 space-y-3">
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-black text-gray-600 uppercase ml-1 tracking-widest">Início</label>
+                                                            <input type="date" value={customDateStart} onChange={e => setCustomDateStart(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg p-2 text-[10px] text-white outline-none focus:border-red-600 transition-colors" />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-black text-gray-600 uppercase ml-1 tracking-widest">Fim</label>
+                                                            <input type="date" value={customDateEnd} onChange={e => setCustomDateEnd(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg p-2 text-[10px] text-white outline-none focus:border-red-600 transition-colors" />
+                                                        </div>
                                                     </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[9px] font-black text-gray-600 uppercase ml-2 tracking-widest">Data Final</label>
-                                                        <input type="date" value={customDateEnd} onChange={e => setCustomDateEnd(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl p-4 text-[11px] text-white outline-none focus:border-red-600 transition-colors" />
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -709,8 +699,11 @@ export default function AdminDashboard() {
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-6 text-center">
-                                                        <span className="text-[9px] font-black uppercase text-gray-500 bg-white/5 px-2 py-1 rounded border border-white/5">
-                                                            {lead.origin === 'renove' ? 'RENOVE' : lead.origin === 'landing_page' ? 'REDFLIX' : lead.origin || 'OUTRO'}
+                                                        <span className={`text-[9px] font-black uppercase px-2 py-1 rounded border ${lead.origin === 'renove' ? 'text-orange-500 bg-orange-500/5 border-orange-500/10' :
+                                                                lead.origin === 'landing_page' ? 'text-red-500 bg-red-500/5 border-red-500/10' :
+                                                                    'text-blue-500 bg-blue-500/5 border-blue-500/10'
+                                                            }`}>
+                                                            {lead.origin === 'renove' ? '♻️ Renove' : lead.origin === 'landing_page' ? '📽️ Landing' : '⌨️ Manual'}
                                                         </span>
                                                     </td>
                                                     <td className="px-8 py-6 text-center">
