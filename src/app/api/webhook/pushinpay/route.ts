@@ -96,7 +96,7 @@ export async function POST(req: Request) {
 
                     if (!snapEmail.empty) {
                         // Pega o lead mais recente que esteja pendente
-                        const doc = snapEmail.docs.find(d => ['pending', 'pending_payment'].includes(d.data().status)) || snapEmail.docs[0];
+                        const doc = snapEmail.docs.find((d: any) => ['pending', 'pending_payment'].includes(d.data().status)) || snapEmail.docs[0];
                         const leadData = doc.data();
 
                         try {

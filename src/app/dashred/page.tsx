@@ -366,52 +366,56 @@ export default function AdminDashboard() {
     );
 
     // BARREIRA DE IP (Proteção Máxima)
-    if (!isIpAuthorized) return (
-        <div className="min-h-screen bg-black flex items-center justify-center p-6 text-center">
-            <div className="max-w-md space-y-6">
-                <AlertCircle className="text-red-600 mx-auto" size={80} />
-                <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase">ACESSO BLOQUEADO</h1>
-                <p className="text-gray-500 font-medium leading-relaxed">
-                    Seu endereço de IP <span className="text-red-500 font-bold">({clientIp})</span> não está autorizado a acessar este sistema de alta precisão.
-                </p>
-                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-[10px] text-gray-400 font-mono">
-                    SECURITY_ENTRY_DENIED: UNAUTHORIZED_SOURCE
+    if (!isIpAuthorized) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center p-6 text-center">
+                <div className="max-w-md space-y-6">
+                    <AlertCircle className="text-red-600 mx-auto" size={80} />
+                    <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase">ACESSO BLOQUEADO</h1>
+                    <p className="text-gray-500 font-medium leading-relaxed">
+                        Seu endereço de IP <span className="text-red-500 font-bold">({clientIp})</span> não está autorizado a acessar este sistema de alta precisão.
+                    </p>
+                    <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-[10px] text-gray-400 font-mono">
+                        SECURITY_ENTRY_DENIED: UNAUTHORIZED_SOURCE
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    }
 
-    if (!isAuthenticated) return (
-        <div className="min-h-screen bg-black flex items-center justify-center p-6 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black to-black">
-            <div className="w-full max-w-md bg-[#0a0a0a] p-10 rounded-[2.5rem] border border-white/5 shadow-[0_0_80px_rgba(220,38,38,0.2)]">
-                <div className="text-center mb-10">
-                    <div className="w-20 h-20 bg-red-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl shadow-red-600/30">
-                        <Lock className="text-white" size={40} />
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center p-6 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black to-black">
+                <div className="w-full max-w-md bg-[#0a0a0a] p-10 rounded-[2.5rem] border border-white/5 shadow-[0_0_80px_rgba(220,38,38,0.2)]">
+                    <div className="text-center mb-10">
+                        <div className="w-20 h-20 bg-red-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl shadow-red-600/30">
+                            <Lock className="text-white" size={40} />
+                        </div>
+                        <h1 className="text-4xl font-black italic text-white tracking-tighter uppercase">REDFLIX <span className="text-red-600">ADMIN</span></h1>
+                        <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Área Restrita - Senha Mestra</p>
                     </div>
-                    <h1 className="text-4xl font-black italic text-white tracking-tighter uppercase">REDFLIX <span className="text-red-600">ADMIN</span></h1>
-                    <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Área Restrita - Senha Mestra</p>
+                    <form onSubmit={handleLogin} className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Senha de Acesso</label>
+                            <input
+                                type="password"
+                                placeholder="••••••••"
+                                className="w-full bg-black border border-white/10 p-5 rounded-2xl text-white font-bold tracking-widest focus:border-red-600 outline-none transition-all text-center text-xl"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                required
+                                autoFocus
+                            />
+                        </div>
+                        <button className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-red-600/40 text-sm italic tracking-tighter uppercase mt-4">
+                            DESBLOQUEAR SISTEMA
+                        </button>
+                        <p className="text-center text-[9px] text-gray-700 font-bold uppercase tracking-widest mt-6">Sessão protegida por 7 dias</p>
+                    </form>
                 </div>
-                <form onSubmit={handleLogin} className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Senha de Acesso</label>
-                        <input
-                            type="password"
-                            placeholder="••••••••"
-                            className="w-full bg-black border border-white/10 p-5 rounded-2xl text-white font-bold tracking-widest focus:border-red-600 outline-none transition-all text-center text-xl"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            required
-                            autoFocus
-                        />
-                    </div>
-                    <button className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-red-600/40 text-sm italic tracking-tighter uppercase mt-4">
-                        DESBLOQUEAR SISTEMA
-                    </button>
-                    <p className="text-center text-[9px] text-gray-700 font-bold uppercase tracking-widest mt-6">Sessão protegida por 7 dias</p>
-                </form>
             </div>
-        </div>
-    );
+        );
+    }
 
     return (
         <div className="h-[100dvh] md:h-screen bg-[#020202] text-white font-sans flex overflow-hidden">
@@ -445,12 +449,21 @@ export default function AdminDashboard() {
                         { id: 'overview', icon: TrendingUp, label: 'Dashboard' },
                         { id: 'expiring', icon: Clock, label: 'Renovações' },
                         { id: 'pix', icon: QrCode, label: 'Gerador Pix' }
-                    ].map(item => (
-                        <button key={item.id} onClick={() => { setActiveTab(item.id as any); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === item.id ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
-                            <item.icon size={20} />
-                            <span className={`text-xs font-black uppercase tracking-widest ${isSidebarOpen ? 'block' : 'hidden lg:block'}`}>{item.label}</span>
-                        </button>
-                    ))}
+                    ].map(item => {
+                        const Icon = item.icon;
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => { setActiveTab(item.id as any); setIsSidebarOpen(false); }}
+                                className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === item.id ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+                            >
+                                <Icon size={20} />
+                                <span className={`font-black uppercase tracking-widest text-[10px] ${isSidebarOpen ? 'block' : 'hidden lg:block'}`}>
+                                    {item.label}
+                                </span>
+                            </button>
+                        );
+                    })}
                 </nav>
 
                 <div className="absolute bottom-6 left-4 right-4">
