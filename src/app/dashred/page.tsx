@@ -699,7 +699,7 @@ export default function AdminDashboard() {
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-6 text-center">
-                                                        <span className={`text-[9px] font-black uppercase px-2 py-1 rounded border ${lead.origin === 'renove' ? 'text-orange-500 bg-orange-500/5 border-orange-500/10' :
+                                                        <span className={`whitespace-nowrap text-[9px] font-black uppercase px-2 py-1 rounded border ${lead.origin === 'renove' ? 'text-orange-500 bg-orange-500/5 border-orange-500/10' :
                                                             lead.origin === 'landing_page' ? 'text-red-500 bg-red-500/5 border-red-500/10' :
                                                                 'text-blue-500 bg-blue-500/5 border-blue-500/10'
                                                             }`}>
