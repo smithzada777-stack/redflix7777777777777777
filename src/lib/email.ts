@@ -122,11 +122,14 @@ export async function sendEmail({ email, plan, price, status, pixCode, origin = 
         `;
     }
 
+    const isRenove = origin === 'renove';
+    const sender = isRenove ? 'Renove <renove@redflixoficial.site>' : 'RedFlix <suporte@redflixoficial.site>';
+
     try {
         const { data, error } = await resend.emails.send({
-            from: 'RedFlix <suporte@redflixoficial.site>',
+            from: sender,
             to: [email],
-            subject: subject,
+            subject: isRenove ? subject.replace('RedFlix', 'Renove') : subject,
             html: getEmailHtml(innerContent),
         });
         if (error) return { error };

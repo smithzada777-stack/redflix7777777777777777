@@ -10,7 +10,8 @@ const NEXT_PUBLIC_BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL || 'http://localh
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { amount, description, payerEmail, leadId, origin } = body;
+        const { amount, description, payerEmail: rawEmail, leadId, origin } = body;
+        const payerEmail = rawEmail?.toLowerCase().trim();
 
         console.log('--- [PIX API] INICIANDO GERAÇÃO ---');
         console.log('Valor:', amount);
@@ -69,8 +70,9 @@ export async function POST(req: Request) {
                 id: transactionId,
                 status: 'pending', // Correct status as per manual
                 value: parseFloat(cleanAmount),
-                created_at: new Date().toISOString(), // Use created_at as per manual hint (though createdAt is fine, I will use snake_case if manual used it, manual used created_at: new Date().toISOString())
-                leadId: leadId || null
+                created_at: new Date().toISOString(),
+                leadId: leadId || null,
+                origin: origin || 'landing_page'
             });
             console.log(`[PIX API] Documento de pagamento criado: ${transactionId} (status: pending)`);
         } catch (dbError) {

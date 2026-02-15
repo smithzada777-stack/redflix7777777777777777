@@ -24,7 +24,8 @@ export async function POST(req: Request) {
 
         const transactionId = (data.id || data.transaction_id || data.reference || data.external_id || data.reference_id)?.toString().toLowerCase();
         const status = (data.status || data.transaction_status || '').toString().toLowerCase();
-        const payerEmail = data.payer_email || data.email || data.payer?.email;
+        const rawPayerEmail = data.payer_email || data.email || data.payer?.email;
+        const payerEmail = rawPayerEmail?.toLowerCase().trim();
 
         if (!transactionId) {
             console.error('[WEBHOOK] Sem ID de transação no payload.');
@@ -89,28 +90,36 @@ export async function POST(req: Request) {
                 } else if (payerEmail) {
                     // FALLBACK: Tenta por e-mail se não achou por ID de transação diretamente
                     console.log(`[WEBHOOK] Tentando fallback por e-mail: ${payerEmail}`);
-                    const snapEmail = await leadsRef.where('email', '==', payerEmail).where('status', '==', 'pending').limit(1).get();
+
+                    // Busca sem filtro de status primeiro para conferir se o lead existe
+                    const snapEmail = await leadsRef.where('email', 'in', [payerEmail, payerEmail.toLowerCase()]).get();
+
                     if (!snapEmail.empty) {
-                        const doc = snapEmail.docs[0];
+                        // Pega o lead mais recente que esteja pendente
+                        const doc = snapEmail.docs.find(d => ['pending', 'pending_payment'].includes(d.data().status)) || snapEmail.docs[0];
+                        const leadData = doc.data();
+
                         try {
+                            const newStatus = leadData.isRenewal ? 'renewed' : 'approved';
                             await doc.ref.update({
-                                status: 'approved',
+                                status: newStatus,
                                 transactionId: transactionId,
                                 paidAt: new Date().toISOString()
                             });
-                            console.log(`[WEBHOOK] Lead encontrado e aprovado via Fallback de E-mail.`);
+                            console.log(`[WEBHOOK] Lead ${doc.id} aprovado via Fallback de E-mail.`);
 
                             await sendEmail({
                                 email: payerEmail,
-                                plan: doc.data().plan || 'Plano RedFlix',
-                                price: doc.data().price || '0,00',
-                                status: 'approved'
+                                plan: leadData.plan || 'Plano RedFlix',
+                                price: leadData.price || '0,00',
+                                status: 'approved',
+                                origin: leadData.origin || 'RedFlix'
                             });
                         } catch (err: any) {
                             console.error(`[WEBHOOK] Erro no fluxo de fallback: ${err.message}`);
                         }
                     } else {
-                        console.warn(`[WEBHOOK] Nenhum lead pendente encontrado para o e-mail ${payerEmail}`);
+                        console.error(`[WEBHOOK] ERRO CRÍTICO: Nenhum lead encontrado para o e-mail ${payerEmail} ou transação ${transactionId}. O pagamento foi recebido mas não pôde ser vinculado a um cliente.`);
                     }
                 }
             }
