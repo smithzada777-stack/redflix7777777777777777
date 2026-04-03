@@ -98,6 +98,7 @@ export default function AdminDashboard() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
     const [tableTab, setTableTab] = useState<'approved' | 'pending'>('approved');
+    const [dashMode, setDashMode] = useState<'principal' | 'renove' | 'combined'>('principal');
 
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
     const [discount, setDiscount] = useState(10);
@@ -185,11 +186,12 @@ export default function AdminDashboard() {
         setPixLoading(true); setManualPixStatus('pending');
         try {
             const cleanAmount = pixAmount.replace(',', '.');
+            const pixOrigin = dashMode === 'renove' ? 'renove' : 'painel-admin';
             const res = await axios.post('/api/payment', {
                 amount: cleanAmount,
-                description: 'Venda Dash',
+                description: dashMode === 'renove' ? 'Renove Dash' : 'Venda Dash',
                 payerEmail: email,
-                origin: 'painel-admin'
+                origin: pixOrigin
             });
             if (res.data.qrcode_content) {
                 setGeneratedPixString(res.data.qrcode_content);
@@ -203,6 +205,7 @@ export default function AdminDashboard() {
                     plan: 'Dash Pix',
                     price: pixAmount,
                     status: 'pending',
+                    origin: pixOrigin,
                     transactionId: res.data.transaction_id,
                     createdAt: Timestamp.now()
                 };
@@ -263,7 +266,7 @@ export default function AdminDashboard() {
     useEffect(() => {
         if (!lastManualPixId) return;
         const unsub = onSnapshot(doc(db, "leads", lastManualPixId), (snap) => {
-            if (snap.exists() && snap.data().status === 'approved') setManualPixStatus('approved');
+            if (snap.exists() && (snap.data().status === 'approved' || snap.data().status === 'renewed')) setManualPixStatus('approved');
         });
         return () => unsub();
     }, [lastManualPixId]);
@@ -273,9 +276,7 @@ export default function AdminDashboard() {
         setLoading(true);
         const unsubscribe = onSnapshot(query(collection(db, "leads"), orderBy("createdAt", "desc")), (snapshot) => {
             const allLeads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
-            // Filtra removendo qualquer coisa que venha da Renove
-            const filteredLeads = allLeads.filter(l => l.origin !== 'renove' && l.origin !== 'Renove');
-            setLeads(filteredLeads);
+            setLeads(allLeads);
             setLoading(false);
         });
         return () => unsubscribe();
@@ -286,7 +287,14 @@ export default function AdminDashboard() {
         const startOfDay = new Date(new Date(now).setHours(0, 0, 0, 0));
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        const filtered = leads.filter(l => {
+        // Filtro por dashMode
+        const modeLeads = dashMode === 'principal'
+            ? leads.filter(l => l.origin !== 'renove' && l.origin !== 'Renove')
+            : dashMode === 'renove'
+                ? leads.filter(l => l.origin === 'renove' || l.origin === 'Renove')
+                : leads;
+
+        const filtered = modeLeads.filter(l => {
             if (!l.createdAt) return false;
             const d = l.createdAt.toDate();
             let passDate = true;
@@ -343,7 +351,7 @@ export default function AdminDashboard() {
         const refundedValue = refundedFiltered.reduce((acc, curr) => acc + parsePrice(curr.price), 0);
 
         // Assinaturas ativas (approved/renewed com dias restantes > 0)
-        const allActive = leads.filter(l => (l.status === 'approved' || l.status === 'renewed'));
+        const allActive = modeLeads.filter(l => (l.status === 'approved' || l.status === 'renewed'));
         const activeSubscriptions = allActive.filter(l => getDaysRemaining(l.createdAt, l.plan) > 0);
 
         // Assinantes novos (primeiro mês) vs recorrentes (renewed)
@@ -351,7 +359,7 @@ export default function AdminDashboard() {
         const recurringSubscribers = filtered.filter(l => l.status === 'renewed');
 
         // Vendas hoje
-        const salesToday = leads.filter(l => l.createdAt?.toDate().toDateString() === new Date().toDateString() && (l.status === 'approved' || l.status === 'renewed')).length;
+        const salesToday = modeLeads.filter(l => l.createdAt?.toDate().toDateString() === new Date().toDateString() && (l.status === 'approved' || l.status === 'renewed')).length;
 
         const kpiLabel = dateFilter === 'today' ? 'Hoje' :
             dateFilter === 'yesterday' ? 'Ontem' :
@@ -383,7 +391,7 @@ export default function AdminDashboard() {
             expiring: expiringSorted,
             expiringTotal: allActive.length
         };
-    }, [leads, searchTerm, dateFilter, customDateStart, customDateEnd, planFilter, priceFilter, originFilter]);
+    }, [leads, dashMode, searchTerm, dateFilter, customDateStart, customDateEnd, planFilter, priceFilter, originFilter]);
 
     const deleteLead = async (id: string) => {
         if (!confirm('Tem certeza que deseja excluir?')) return;
@@ -529,89 +537,74 @@ export default function AdminDashboard() {
                 </header>
 
                 <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
-                    {/* GLOBAL MONITORING HEADER */}
+                    {/* TOP BAR: Dash Mode Toggle + Período */}
                     {activeTab !== 'pix' && (
-                        <div className="flex flex-col items-center text-center space-y-8 mb-16 px-4">
-                            <div className="space-y-4">
-                                <h2 className="text-4xl md:text-6xl font-black italic text-white tracking-tighter uppercase leading-none">
-                                    Painel de <span className="text-red-600">Controle</span>
-                                </h2>
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+                            {/* DASH MODE TOGGLE */}
+                            <div className="flex items-center gap-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-white/10 shadow-2xl">
+                                <button onClick={() => { setDashMode('principal'); setCurrentPage(1); }} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${dashMode === 'principal' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
+                                    🔴 Dash Principal
+                                </button>
+                                <button onClick={() => { setDashMode('renove'); setCurrentPage(1); }} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${dashMode === 'renove' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
+                                    🔵 Dash Renove
+                                </button>
+                                <button onClick={() => { setDashMode('combined'); setCurrentPage(1); }} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${dashMode === 'combined' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
+                                    🟣 Combinado
+                                </button>
                             </div>
 
-                            {/* SITE TABS & PERÍODO - INTEGRATED PREMIUM */}
-                            <div className="w-full flex flex-col md:flex-row items-center justify-center gap-4">
-                                <div className="flex items-center gap-1 bg-[#0a0a0a] p-1.5 rounded-[2rem] border border-white/10 shadow-2xl overflow-x-auto max-w-full no-scrollbar">
-                                    {[
-                                        { id: 'all', label: '📊 Geral' },
-                                        { id: 'landing_page', label: '📽️ Landing' },
-                                        { id: 'painel-admin', label: '⌨️ Dash Pix' }
-                                    ].map(site => (
-                                        <button
-                                            key={site.id}
-                                            onClick={() => setOriginFilter(site.id)}
-                                            className={`whitespace-nowrap px-5 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 ${originFilter === site.id
-                                                ? 'bg-red-600 text-white shadow-[0_0_20px_rgba(229,9,20,0.4)]'
-                                                : 'text-gray-500 hover:text-white hover:bg-white/5'
-                                                }`}
-                                        >
-                                            {site.label}
-                                        </button>
-                                    ))}
-                                </div>
+                            {/* PERÍODO DROPDOWN */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
+                                    className="flex items-center gap-3 px-6 py-3 rounded-xl bg-[#0a0a0a] border border-white/10 hover:border-red-600/50 hover:bg-white/5 transition-all group shadow-2xl"
+                                >
+                                    <Calendar size={14} className="text-red-600" />
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Período:</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-white italic">
+                                        {dateFilter === 'today' ? 'Hoje' :
+                                            dateFilter === 'yesterday' ? 'Ontem' :
+                                                dateFilter === 'month' ? 'Mês' :
+                                                    dateFilter === 'custom' ? 'Custom' : 'Tudo'}
+                                    </span>
+                                    <ChevronDown size={14} className={`text-gray-500 transition-transform duration-500 ${isDateDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
 
-                                {/* PERÍODO DROPDOWN - COMPACT VERSION */}
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
-                                        className="flex items-center gap-3 px-6 py-3 rounded-full bg-[#0a0a0a] border border-white/10 hover:border-red-600/50 hover:bg-white/5 transition-all group shadow-2xl"
-                                    >
-                                        <Calendar size={14} className="text-red-600" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-white italic">
-                                            {dateFilter === 'today' ? 'Hoje' :
-                                                dateFilter === 'yesterday' ? 'Ontem' :
-                                                    dateFilter === 'month' ? 'Mês' :
-                                                        dateFilter === 'custom' ? 'Período' : 'Tudo'}
-                                        </span>
-                                        <ChevronDown size={14} className={`text-gray-500 transition-transform duration-500 ${isDateDropdownOpen ? 'rotate-180' : ''}`} />
-                                    </button>
+                                {isDateDropdownOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-[80]" onClick={() => setIsDateDropdownOpen(false)} />
+                                        <div className="absolute top-full mt-4 right-0 w-64 bg-[#0a0a0a] border border-white/10 rounded-2xl p-3 shadow-2xl z-[90] animate-in fade-in slide-in-from-top-4 duration-300 backdrop-blur-3xl">
+                                            {[
+                                                { id: 'today', label: 'Hoje' },
+                                                { id: 'yesterday', label: 'Ontem' },
+                                                { id: 'month', label: 'Mês Atual' },
+                                                { id: 'all', label: 'Todo o Período' },
+                                                { id: 'custom', label: 'Personalizado' }
+                                            ].map(f => (
+                                                <button
+                                                    key={f.id}
+                                                    onClick={() => { setDateFilter(f.id as any); setIsDateDropdownOpen(false); }}
+                                                    className={`w-full text-left px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all mb-1 last:mb-0 ${dateFilter === f.id ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                                >
+                                                    {f.label}
+                                                </button>
+                                            ))}
 
-                                    {isDateDropdownOpen && (
-                                        <>
-                                            <div className="fixed inset-0 z-[80]" onClick={() => setIsDateDropdownOpen(false)} />
-                                            <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-64 bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-3 shadow-2xl z-[90] animate-in fade-in slide-in-from-top-4 duration-300 backdrop-blur-3xl">
-                                                {[
-                                                    { id: 'today', label: 'Hoje' },
-                                                    { id: 'yesterday', label: 'Ontem' },
-                                                    { id: 'month', label: 'Mês Atual' },
-                                                    { id: 'all', label: 'Todo o Período' },
-                                                    { id: 'custom', label: 'Personalizado' }
-                                                ].map(f => (
-                                                    <button
-                                                        key={f.id}
-                                                        onClick={() => { setDateFilter(f.id as any); setIsDateDropdownOpen(false); }}
-                                                        className={`w-full text-left px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all mb-1 last:mb-0 ${dateFilter === f.id ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                                            }`}
-                                                    >
-                                                        {f.label}
-                                                    </button>
-                                                ))}
-
-                                                {dateFilter === 'custom' && (
-                                                    <div className="mt-3 p-4 bg-black/60 rounded-2xl border border-white/5 space-y-3">
-                                                        <div className="space-y-1">
-                                                            <label className="text-[8px] font-black text-gray-600 uppercase ml-1 tracking-widest">Início</label>
-                                                            <input type="date" value={customDateStart} onChange={e => setCustomDateStart(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg p-2 text-[10px] text-white outline-none focus:border-red-600 transition-colors" />
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <label className="text-[8px] font-black text-gray-600 uppercase ml-1 tracking-widest">Fim</label>
-                                                            <input type="date" value={customDateEnd} onChange={e => setCustomDateEnd(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg p-2 text-[10px] text-white outline-none focus:border-red-600 transition-colors" />
-                                                        </div>
+                                            {dateFilter === 'custom' && (
+                                                <div className="mt-3 p-4 bg-black/60 rounded-2xl border border-white/5 space-y-3">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[8px] font-black text-gray-600 uppercase ml-1 tracking-widest">Início</label>
+                                                        <input type="date" value={customDateStart} onChange={e => setCustomDateStart(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg p-2 text-[10px] text-white outline-none focus:border-red-600 transition-colors" />
                                                     </div>
-                                                )}
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[8px] font-black text-gray-600 uppercase ml-1 tracking-widest">Fim</label>
+                                                        <input type="date" value={customDateEnd} onChange={e => setCustomDateEnd(e.target.value)} className="w-full bg-black border border-white/10 rounded-lg p-2 text-[10px] text-white outline-none focus:border-red-600 transition-colors" />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}
@@ -620,30 +613,28 @@ export default function AdminDashboard() {
                         <>
 
 
-                            {/* KPI Grid Premium - 10 CARDS */}
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+                            {/* KPI Grid Premium - 8 CARDS */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                                 {[
-                                    { label: 'Faturamento', value: formatCurrency(metrics.revenueFiltered), sub: `${metrics.salesFiltered} vendas`, icon: DollarSign, color: 'from-red-600 to-red-900' },
                                     { label: 'Lucro', value: formatCurrency(metrics.revenueFiltered), sub: `${formatCurrency(metrics.pendingValue)} pendente`, icon: TrendingUp, color: 'from-emerald-600 to-green-900' },
-                                    { label: 'Leads', value: metrics.leadsFiltered, sub: 'Visitantes', icon: Users, color: 'from-orange-600 to-red-600' },
                                     { label: 'Vendas Hoje', value: metrics.salesToday, sub: 'Meta 20/dia', icon: BarChart3, color: 'from-indigo-600 to-purple-900' },
-                                    { label: 'Conversão', value: `${metrics.conversion.toFixed(1)}%`, sub: 'Taxa AP', icon: Percent, color: 'from-red-600 to-pink-600' },
-                                    { label: 'Pendentes', value: metrics.pendingCount, sub: formatCurrency(metrics.pendingValue), icon: AlertCircle, color: 'from-yellow-600 to-yellow-900' },
+                                    { label: 'Leads', value: metrics.leadsFiltered, sub: 'Visitantes', icon: Users, color: 'from-orange-600 to-red-600' },
+                                    { label: 'Novos Assinantes', value: metrics.newSubscribers, sub: `${metrics.recurringSubscribers} recorrentes`, icon: Star, color: 'from-violet-600 to-purple-900' },
                                     { label: 'Renovações', value: metrics.renovationsCount, sub: 'Recorrentes', icon: Clock, color: 'from-blue-600 to-blue-900' },
-                                    { label: 'Reembolso', value: metrics.refundedCount, sub: formatCurrency(metrics.refundedValue), icon: AlertCircle, color: 'from-gray-600 to-gray-800' },
-                                    { label: 'Assinaturas Ativas', value: metrics.activeSubscriptions, sub: 'Planos vigentes', icon: Shield, color: 'from-green-600 to-emerald-900' },
-                                    { label: 'Novos Assinantes', value: metrics.newSubscribers, sub: `${metrics.recurringSubscribers} recorrentes`, icon: Star, color: 'from-violet-600 to-purple-900' }
+                                    { label: 'Conversão', value: `${metrics.conversion.toFixed(1)}%`, sub: 'Taxa', icon: Percent, color: 'from-red-600 to-pink-600' },
+                                    { label: 'Pendentes', value: metrics.pendingCount, sub: formatCurrency(metrics.pendingValue), icon: AlertCircle, color: 'from-yellow-600 to-yellow-900' },
+                                    { label: 'Assinaturas Ativas', value: metrics.activeSubscriptions, sub: 'Planos vigentes', icon: Shield, color: 'from-green-600 to-emerald-900' }
                                 ].map((kpi, i) => (
                                     <div key={i} className="relative group">
-                                        <div className={`absolute -inset-0.5 bg-gradient-to-r ${kpi.color} rounded-2xl blur opacity-10 group-hover:opacity-30 transition duration-500`}></div>
-                                        <div className="relative bg-[#0a0a0a] p-4 md:p-6 rounded-2xl border border-white/5 h-full flex flex-col justify-between overflow-hidden">
+                                        <div className={`absolute -inset-0.5 bg-gradient-to-r ${kpi.color} rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500`}></div>
+                                        <div className="relative bg-[#0d0d0d] p-4 md:p-6 rounded-2xl border border-white/10 h-full flex flex-col justify-between overflow-hidden">
                                             <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${kpi.color} flex items-center justify-center shadow-lg mb-4`}>
                                                 <kpi.icon size={16} className="text-white" />
                                             </div>
                                             <div>
-                                                <h3 className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{kpi.label}</h3>
+                                                <h3 className="text-[9px] font-black text-gray-300 uppercase tracking-widest">{kpi.label}</h3>
                                                 <p className="text-xl md:text-2xl font-black text-white italic tracking-tighter mt-1">{kpi.value}</p>
-                                                <p className="text-[7px] text-gray-600 font-bold uppercase mt-1">{kpi.sub}</p>
+                                                <p className="text-[8px] text-gray-400 font-bold uppercase mt-1">{kpi.sub}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -652,8 +643,10 @@ export default function AdminDashboard() {
 
                             {/* Table Premium */}
                             <div className="bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden shadow-2xl transition-all">
-                                <div className="p-8 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 bg-gradient-to-r from-red-600/5 to-transparent">
-                                    <div className="flex items-center gap-4">
+                                <div className="p-6 border-b border-white/5 bg-gradient-to-r from-red-600/5 to-transparent space-y-4">
+                                    {/* Row 1: Tabs + Origin filter + Delete btn */}
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        {/* Aprovados / Pendentes */}
                                         <div className="flex items-center gap-1 bg-black p-1 rounded-xl border border-white/5">
                                             <button onClick={() => { setTableTab('approved'); setCurrentPage(1); }} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${tableTab === 'approved' ? 'bg-green-600 text-white' : 'text-gray-500 hover:text-white'}`}>Aprovados</button>
                                             <button onClick={() => { setTableTab('pending'); setCurrentPage(1); }} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${tableTab === 'pending' ? 'bg-yellow-600 text-white' : 'text-gray-500 hover:text-white'}`}>
@@ -661,47 +654,60 @@ export default function AdminDashboard() {
                                                 {metrics.pendingCount > 0 && <span className="bg-yellow-500 text-black text-[8px] font-black w-5 h-5 rounded-full flex items-center justify-center">{metrics.pendingCount}</span>}
                                             </button>
                                         </div>
+
+                                        {/* Origin filter */}
+                                        <select
+                                            value={originFilter}
+                                            onChange={e => setOriginFilter(e.target.value)}
+                                            className="bg-black border border-white/10 rounded-xl py-2.5 px-4 text-[9px] font-black text-gray-300 focus:border-red-600 outline-none transition-all uppercase"
+                                        >
+                                            <option value="all">TODAS ORIGENS</option>
+                                            <option value="landing_page">LANDING</option>
+                                            <option value="painel-admin">DASH PIX</option>
+                                            <option value="renove">RENOVE</option>
+                                        </select>
+
                                         {selectedLeads.length > 0 && (
                                             <button
                                                 onClick={deleteSelectedLeads}
-                                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 animate-in slide-in-from-left-4 duration-300"
+                                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2"
                                             >
                                                 <Trash2 size={14} /> EXCLUIR ({selectedLeads.length})
                                             </button>
                                         )}
                                     </div>
-                                    <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <div className="relative">
+
+                                    {/* Row 2: Search + Plan + Value filters */}
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <div className="relative flex-1 min-w-[200px]">
                                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
                                             <input
                                                 type="text"
                                                 placeholder="BUSCAR NOME/EMAIL..."
                                                 value={searchTerm}
                                                 onChange={e => setSearchTerm(e.target.value)}
-                                                className="w-full bg-black border border-white/10 rounded-xl py-3 pl-10 pr-4 text-[9px] font-black focus:border-red-600 outline-none transition-all placeholder:opacity-30 uppercase"
+                                                className="w-full bg-black border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-[9px] font-black focus:border-red-600 outline-none transition-all placeholder:opacity-30 uppercase"
                                             />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <select
-                                                value={planFilter}
-                                                onChange={e => setPlanFilter(e.target.value)}
-                                                className="bg-black border border-white/10 rounded-xl py-3 px-4 text-[9px] font-black text-gray-400 focus:border-red-600 outline-none transition-all uppercase"
-                                            >
-                                                <option value="all">TODOS PLANOS</option>
-                                                <option value="Mensal">MENSAL</option>
-                                                <option value="Trimestral">TRIMESTRAL</option>
-                                                <option value="Semestral">SEMESTRAL</option>
-                                                <option value="VIP">VIP</option>
-                                                <option value="Dash Pix">DASH PIX</option>
-                                            </select>
-                                            <input
-                                                type="text"
-                                                placeholder="VALOR (R$)..."
-                                                value={priceFilter}
-                                                onChange={e => setPriceFilter(e.target.value)}
-                                                className="bg-black border border-white/10 rounded-xl py-3 px-4 text-[9px] font-black focus:border-red-600 outline-none transition-all placeholder:opacity-30 uppercase"
-                                            />
-                                        </div>
+                                        <select
+                                            value={planFilter}
+                                            onChange={e => setPlanFilter(e.target.value)}
+                                            className="bg-black border border-white/10 rounded-xl py-2.5 px-4 text-[9px] font-black text-gray-300 focus:border-red-600 outline-none transition-all uppercase"
+                                        >
+                                            <option value="all">TODOS PLANOS</option>
+                                            <option value="Mensal">MENSAL</option>
+                                            <option value="Trimestral">TRIMESTRAL</option>
+                                            <option value="Semestral">SEMESTRAL</option>
+                                            <option value="VIP">VIP</option>
+                                            <option value="Dash Pix">DASH PIX</option>
+                                        </select>
+                                        <input
+                                            type="text"
+                                            placeholder="VALOR (R$)..."
+                                            value={priceFilter}
+                                            onChange={e => setPriceFilter(e.target.value)}
+                                            className="bg-black border border-white/10 rounded-xl py-2.5 px-4 text-[9px] font-black focus:border-red-600 outline-none transition-all placeholder:opacity-30 uppercase w-28"
+                                        />
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
@@ -784,7 +790,7 @@ export default function AdminDashboard() {
                                                         </span>
                                                     </td>
                                                     <td className="px-8 py-6">
-                                                        <div className="flex justify-end gap-3 md:translate-x-4 md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-x-0 transition-all">
+                                                        <div className="flex justify-end gap-3">
                                                             <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="p-2.5 bg-green-600/10 hover:bg-green-600/20 rounded-xl transition-all border border-green-600/20"><MessageCircle size={16} className="text-green-500" /></a>
                                                             <button onClick={() => updateDoc(doc(db, "leads", lead.id), { status: lead.status === 'approved' ? 'renewed' : 'approved' })} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5"><CheckCircle2 size={16} className={lead.status === 'renewed' ? "text-blue-500" : "text-green-500"} /></button>
                                                             <button onClick={() => deleteLead(lead.id)} className="p-2.5 bg-red-600/10 hover:bg-red-600 rounded-xl transition-all border border-red-600/20 group/del"><Trash2 size={16} className="text-red-500 group-hover/del:text-white" /></button>

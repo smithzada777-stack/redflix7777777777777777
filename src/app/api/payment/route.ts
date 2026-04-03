@@ -82,7 +82,7 @@ export async function POST(req: Request) {
         // 2. Update lead if provided via Admin SDK
         if (leadId && leadId !== 'new') {
             try {
-                const isRenewal = origin === 'painel-admin' || body.isRenewal === true;
+                const isRenewal = body.isRenewal === true;
                 await adminDb.collection('leads').doc(leadId).update({
                     transactionId: transactionId,
                     pixCode: data.qr_code,

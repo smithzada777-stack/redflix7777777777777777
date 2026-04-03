@@ -60,6 +60,12 @@ export async function POST(req: Request) {
                     for (const doc of snapshot.docs) {
                         const leadData = doc.data();
 
+                        // Idempotência: se já aprovado/renovado, não reprocessar
+                        if (leadData.status === 'approved' || leadData.status === 'renewed') {
+                            console.log(`[WEBHOOK] Lead ${doc.id} já está ${leadData.status}. Ignorando duplicata.`);
+                            continue;
+                        }
+
                         try {
                             const newStatus = leadData.isRenewal ? 'renewed' : 'approved';
                             // Primeiro garante a atualização no Banco (Dashboard)
@@ -79,7 +85,8 @@ export async function POST(req: Request) {
                                     email: leadData.email,
                                     plan: leadData.plan || 'Plano RedFlix',
                                     price: leadData.price || '0,00',
-                                    status: 'approved'
+                                    status: 'approved',
+                                    origin: leadData.origin || 'RedFlix'
                                 });
                                 console.log(`[WEBHOOK] E-mail de aprovação enviado com sucesso para ${leadData.email}`);
                             } catch (emailErr: any) {
@@ -96,27 +103,33 @@ export async function POST(req: Request) {
 
                     if (!snapEmail.empty) {
                         // Pega o lead mais recente que esteja pendente
-                        const doc = snapEmail.docs.find((d: any) => ['pending', 'pending_payment'].includes(d.data().status)) || snapEmail.docs[0];
-                        const leadData = doc.data();
+                        const pendingDoc = snapEmail.docs.find((d: any) => ['pending', 'pending_payment'].includes(d.data().status));
+                        
+                        if (!pendingDoc) {
+                            console.log(`[WEBHOOK] Todos os leads para ${payerEmail} já estão aprovados. Ignorando.`);
+                        } else {
+                            const doc = pendingDoc;
+                            const leadData = doc.data();
 
-                        try {
-                            const newStatus = leadData.isRenewal ? 'renewed' : 'approved';
-                            await doc.ref.update({
-                                status: newStatus,
-                                transactionId: transactionId,
-                                paidAt: new Date().toISOString()
-                            });
-                            console.log(`[WEBHOOK] Lead ${doc.id} aprovado via Fallback de E-mail.`);
+                            try {
+                                const newStatus = leadData.isRenewal ? 'renewed' : 'approved';
+                                await doc.ref.update({
+                                    status: newStatus,
+                                    transactionId: transactionId,
+                                    paidAt: new Date().toISOString()
+                                });
+                                console.log(`[WEBHOOK] Lead ${doc.id} aprovado via Fallback de E-mail.`);
 
-                            await sendEmail({
-                                email: payerEmail,
-                                plan: leadData.plan || 'Plano RedFlix',
-                                price: leadData.price || '0,00',
-                                status: 'approved',
-                                origin: leadData.origin || 'RedFlix'
-                            });
-                        } catch (err: any) {
-                            console.error(`[WEBHOOK] Erro no fluxo de fallback: ${err.message}`);
+                                await sendEmail({
+                                    email: payerEmail,
+                                    plan: leadData.plan || 'Plano RedFlix',
+                                    price: leadData.price || '0,00',
+                                    status: 'approved',
+                                    origin: leadData.origin || 'RedFlix'
+                                });
+                            } catch (err: any) {
+                                console.error(`[WEBHOOK] Erro no fluxo de fallback: ${err.message}`);
+                            }
                         }
                     } else {
                         console.error(`[WEBHOOK] ERRO CRÍTICO: Nenhum lead encontrado para o e-mail ${payerEmail} ou transação ${transactionId}. O pagamento foi recebido mas não pôde ser vinculado a um cliente.`);
