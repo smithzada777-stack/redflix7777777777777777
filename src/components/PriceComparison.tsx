@@ -157,17 +157,22 @@ export default function PriceComparison() {
                             <div className="mt-auto mb-2 relative z-10 w-full px-8">
                                 <div className="bg-neutral-100/5 rounded-xl p-3 border border-primary/20 mb-2">
                                     <p className="text-[10px] text-gray-400 mb-2 uppercase tracking-widest font-bold">Inclui conteúdo de:</p>
-                                    <div className="flex justify-center gap-6 overflow-hidden relative">
-                                        {/* SOMBRAS LATERAIS */}
-                                        <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[#0d0d0d] to-transparent z-20 pointer-events-none" />
-                                        <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[#0d0d0d] to-transparent z-20 pointer-events-none" />
-
-                                        {/* LOGOS - carrossel fluido infinito */}
-                                        <div className="animate-marquee flex items-center gap-10" style={{ animationDuration: '12s' }}>
-                                            {competitors.map(c => <CompetitorLogo key={c.name + 'a'} name={c.name} className="h-6 w-auto opacity-70" />)}
-                                            {competitors.map(c => <CompetitorLogo key={c.name + 'b'} name={c.name} className="h-6 w-auto opacity-70" />)}
-                                            {competitors.map(c => <CompetitorLogo key={c.name + 'c'} name={c.name} className="h-6 w-auto opacity-70" />)}
+                                    <div className="overflow-hidden relative">
+                                        <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-[#0f0a0a] to-transparent z-10 pointer-events-none" />
+                                        <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-[#0f0a0a] to-transparent z-10 pointer-events-none" />
+                                        <div className="logos-scroll flex items-center gap-8 w-max">
+                                            {competitors.map(c => <CompetitorLogo key={c.name + '1'} name={c.name} className="h-5 w-auto opacity-60 shrink-0" />)}
+                                            {competitors.map(c => <CompetitorLogo key={c.name + '2'} name={c.name} className="h-5 w-auto opacity-60 shrink-0" />)}
                                         </div>
+                                        <style jsx>{`
+                                            .logos-scroll {
+                                                animation: logosSlide 10s linear infinite;
+                                            }
+                                            @keyframes logosSlide {
+                                                0% { transform: translateX(0); }
+                                                100% { transform: translateX(-50%); }
+                                            }
+                                        `}</style>
                                     </div>
                                 </div>
                                 <div className="bg-primary/10 rounded-xl p-3 border border-primary/20"><p className="text-white font-bold text-lg leading-tight">+ de R$ 2.000 no bolso</p></div>
@@ -177,9 +182,9 @@ export default function PriceComparison() {
                 </div>
 
                 {/* Total Cost Alert */}
-                <div className="mt-10 md:mt-12 bg-white/5 backdrop-blur-sm border border-white/5 rounded-[2rem] p-6 md:p-10 max-w-4xl mx-auto text-center relative overflow-hidden group">
+                <div className="mt-10 md:mt-12 bg-white/5 backdrop-blur-sm border border-white/10 rounded-[2rem] p-6 md:p-10 max-w-4xl mx-auto text-center relative overflow-hidden group">
                     <div className="relative z-10 space-y-6">
-                        <p className="text-gray-400 text-sm md:text-xl font-medium leading-relaxed">
+                        <p className="text-gray-300 text-sm md:text-xl font-medium leading-relaxed">
                             Assinar todos separadamente custaria <span className="text-white font-bold underline underline-offset-4 decoration-red-500/30">R$ 2.296,80 por ano</span>.
                             <br className="hidden md:block" /><span className="text-primary font-black mt-2 block md:inline md:ml-1 text-sm md:text-base uppercase tracking-wider italic">Aqui você tem tudo isso por muito menos.</span>
                         </p>

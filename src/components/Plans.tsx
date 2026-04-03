@@ -133,7 +133,7 @@ export default function Plans() {
                                 key={plan.id}
                                 className={`group relative rounded-[2.5rem] flex flex-col transition-all duration-500 border ${plan.highlight
                                     ? 'border-primary/50 bg-[#121212] shadow-[0_25px_80px_rgba(229,9,20,0.25)] py-8 px-6 md:py-10 md:px-8 z-20 scale-[1.05]'
-                                    : 'border-white/10 bg-[#0d0d0d] py-6 px-5 md:py-6 md:px-5 z-10 opacity-75 scale-95 shadow-[0_10px_40px_rgba(0,0,0,0.5)]'
+                                    : 'border-white/15 bg-[#111111] py-6 px-5 md:py-6 md:px-5 z-10 opacity-90 scale-[0.98] shadow-[0_10px_40px_rgba(0,0,0,0.5)] hover:border-white/25 hover:opacity-100 transition-all'
                                     }`}
                             >
                                 {/* Recommended Badge */}
