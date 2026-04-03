@@ -624,7 +624,7 @@ export default function AdminDashboard() {
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
                                 {[
                                     { label: 'Faturamento', value: formatCurrency(metrics.revenueFiltered), sub: `${metrics.salesFiltered} vendas`, icon: DollarSign, color: 'from-red-600 to-red-900' },
-                                    { label: 'Lucro', value: formatCurrency(metrics.lucroFiltered), sub: 'Após taxas', icon: TrendingUp, color: 'from-emerald-600 to-green-900' },
+                                    { label: 'Lucro', value: formatCurrency(metrics.revenueFiltered), sub: `${formatCurrency(metrics.pendingValue)} pendente`, icon: TrendingUp, color: 'from-emerald-600 to-green-900' },
                                     { label: 'Leads', value: metrics.leadsFiltered, sub: 'Visitantes', icon: Users, color: 'from-orange-600 to-red-600' },
                                     { label: 'Vendas Hoje', value: metrics.salesToday, sub: 'Meta 20/dia', icon: BarChart3, color: 'from-indigo-600 to-purple-900' },
                                     { label: 'Conversão', value: `${metrics.conversion.toFixed(1)}%`, sub: 'Taxa AP', icon: Percent, color: 'from-red-600 to-pink-600' },
