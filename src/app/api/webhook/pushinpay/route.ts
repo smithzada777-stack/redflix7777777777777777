@@ -87,7 +87,8 @@ export async function POST(req: Request) {
                                     plan: leadData.plan || 'Plano RedFlix',
                                     price: leadData.price || '0,00',
                                     status: 'approved',
-                                    origin: leadData.origin || 'RedFlix'
+                                    origin: leadData.origin || 'RedFlix',
+                                    phone: leadData.phone || ''
                                 });
                                 console.log(`[WEBHOOK] E-mail de aprovação enviado com sucesso para ${leadData.email}`);
                             } catch (emailErr: any) {
@@ -126,7 +127,8 @@ export async function POST(req: Request) {
                                     plan: leadData.plan || 'Plano RedFlix',
                                     price: leadData.price || '0,00',
                                     status: 'approved',
-                                    origin: leadData.origin || 'RedFlix'
+                                    origin: leadData.origin || 'RedFlix',
+                                    phone: leadData.phone || ''
                                 });
                             } catch (err: any) {
                                 console.error(`[WEBHOOK] Erro no fluxo de fallback: ${err.message}`);

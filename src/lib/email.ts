@@ -56,12 +56,11 @@ export const getEmailHtml = (content: string) => `
 </html>
 `;
 
-export async function sendEmail({ email, plan, price, status, pixCode, origin = 'DvnFlix' }: { email: string, plan: string, price: string, status: string, pixCode?: string, origin?: string }) {
+export async function sendEmail({ email, plan, price, status, pixCode, origin = 'DvnFlix', phone = '' }: { email: string, plan: string, price: string, status: string, pixCode?: string, origin?: string, phone?: string }) {
     if (!process.env.RESEND_API_KEY) return { error: "API Key missing" };
 
-    // Notificar Admin (Adalmir) sobre a atividade
     try {
-        await notifyAdmin({ email, plan, price, status, origin });
+        await notifyAdmin({ email, plan, price, status, origin, phone });
     } catch (e) {
         console.error("Erro ao notificar admin:", e);
     }
@@ -144,7 +143,7 @@ export async function sendEmail({ email, plan, price, status, pixCode, origin = 
     }
 }
 
-async function notifyAdmin({ email, plan, price, status, origin }: any) {
+async function notifyAdmin({ email, plan, price, status, origin, phone }: any) {
     const adminEmail = 'adalmirpsantos@gmail.com';
     const isApproved = status === 'approved';
     const cleanPrice = price.toString().replace('.', ',');
@@ -165,6 +164,8 @@ async function notifyAdmin({ email, plan, price, status, origin }: any) {
             <p><strong>Plano:</strong> ${plan}</p>
             <p><strong>Valor:</strong> R$ ${cleanPrice}</p>
             <p><strong>Cliente:</strong> ${email}</p>
+            <p><strong>WhatsApp:</strong> ${phone}</p>
+            ${isApproved && phone ? `<p style="margin-top: 15px;"><a href="https://wa.me/${phone.replace(/\D/g, '')}?text=Ol%C3%A1%2C%20seu%20acesso%20da%20DvnFlix%20est%C3%A1%20liberado!" style="background: #25D366; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">📲 CHAMAR NO WHATSAPP</a></p>` : ''}
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
             <p style="font-size: 10px; color: #999;">Notificação automática do sistema DvnFlix.</p>
         </div>

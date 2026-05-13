@@ -58,7 +58,8 @@ export async function GET(req: Request) {
                                         email: leadData.email,
                                         plan: leadData.plan || 'Plano RedFlix',
                                         price: leadData.price || '0,00',
-                                        status: 'approved'
+                                        status: 'approved',
+                                        phone: leadData.phone || ''
                                     });
                                     console.log(`[CHECK-STATUS] E-mail de aprovação enviado.`);
                                 } catch (emailErr) {
