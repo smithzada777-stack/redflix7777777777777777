@@ -1,0 +1,35 @@
+{
+  "name": "redflix",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.24",
+    "axios": "^1.7.9",
+    "dotenv": "^17.2.4",
+    "firebase": "^10.13.1",
+    "firebase-admin": "^12.7.0",
+    "framer-motion": "^11.11.17",
+    "lucide-react": "^0.474.0",
+    "next": "15.1.12",
+    "postcss": "^8.4.47",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "resend": "^4.0.0",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "eslint-config-next": "15.1.7"
+  }
+}

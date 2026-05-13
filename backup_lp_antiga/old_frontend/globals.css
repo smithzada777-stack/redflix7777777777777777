@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+  --background: #121414;
+  --foreground: #e2e2e2;
+  --primary: #E50914;
+  --primary-dim: #ffb4a8;
+  --surface: #121414;
+  --surface-container: #1e2020;
+  --surface-container-high: #282a2b;
+  --font-epilogue: var(--font-epilogue), sans-serif;
+  --font-lexend: var(--font-lexend), sans-serif;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-lexend);
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+}
+
+/* GPU acceleration for all animations */
+* {
+  box-sizing: border-box;
+}
+
+.animate-gpu {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Custom Scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Hide Scrollbar helper */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+/* Custom Animations */
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(229, 9, 20, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(229, 9, 20, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(229, 9, 20, 0);
+  }
+}
+
+.btn-pulse {
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-up {
+  opacity: 0;
+  animation: fadeIn 1.2s ease-out forwards;
+}
+
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shine {
+  animation: shine 3s ease-in-out infinite;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 60s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.hard-shadow { box-shadow: 4px 4px 15px rgba(0,0,0,0.3); }
+.glow-red { filter: drop-shadow(0 0 8px rgba(255, 85, 64, 0.2)); }

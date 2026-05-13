@@ -1,0 +1,219 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+  --background: #121414;
+  --foreground: #e2e2e2;
+  --primary: #E50914;
+  --primary-dim: #ffb4a8;
+  --surface: #121414;
+  --surface-container: #1e2020;
+  --surface-container-high: #282a2b;
+  --font-epilogue: var(--font-epilogue), sans-serif;
+  --font-lexend: var(--font-lexend), sans-serif;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-lexend);
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+}
+
+/* GPU acceleration for all animations */
+* {
+  box-sizing: border-box;
+}
+
+.animate-gpu {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Custom Scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Hide Scrollbar helper */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+/* Custom Animations */
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(229, 9, 20, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(229, 9, 20, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(229, 9, 20, 0);
+  }
+}
+
+.btn-pulse {
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-up {
+  opacity: 0;
+  animation: fadeIn 1.2s ease-out forwards;
+}
+
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shine {
+  animation: shine 3s ease-in-out infinite;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 60s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.hard-shadow { box-shadow: 4px 4px 15px rgba(0,0,0,0.3); }
+.glow-red { filter: drop-shadow(0 0 8px rgba(255, 85, 64, 0.2)); }
+
+/* Text highlight estilo Figma selection — borda + quadradinhos nos cantos */
+.ios-selection-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: rgba(229, 9, 20, 0.18);
+  border: 1.5px solid rgba(229, 9, 20, 0.55);
+  border-radius: 3px;
+  z-index: 0;
+  pointer-events: none;
+  width: 0;
+  opacity: 0;
+}
+
+/* Gatilho da animação controlado pelo React */
+.ios-animate-active .ios-selection-layer {
+  animation: select-width-anim 2.5s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes select-width-anim {
+  0% { width: 0; opacity: 0; }
+  10% { opacity: 1; }
+  100% { width: 100%; opacity: 1; }
+}
+
+/* Estilo do cursor que puxa na borda direita */
+.ios-selection-cursor {
+  position: absolute;
+  left: 100%; /* Trava no canto direito */
+  top: 100%;  /* Trava no canto inferior */
+  transform: translate(-6px, -4px); /* Ajuste fino para a pontinha espetar o quadradinho */
+  z-index: 50;
+  filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.5));
+  pointer-events: none;
+  opacity: 0;
+}
+
+.ios-animate-active .ios-selection-cursor {
+  animation: cursor-fade-out 3s ease-in-out forwards;
+}
+
+@keyframes cursor-fade-out {
+  0% { opacity: 0; transform: translate(-6px, -4px) scale(0.8); }
+  20% { opacity: 1; transform: translate(-6px, -4px) scale(1); }
+  85% { opacity: 1; transform: translate(-6px, -4px) scale(1); }
+  100% { opacity: 0; transform: translate(-6px, -4px) scale(0.5); }
+}
+
+/* Base para os quadradinhos - Aumentados para 12px */
+.ios-selection-dot-tl, .ios-selection-dot-tr, .ios-selection-dot-bl, .ios-selection-dot-br {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #E50914;
+  border-radius: 1px;
+}
+
+/* Posicionamento dos quadradinhos */
+.ios-selection-dot-tl { top: -6px; left: -6px; }
+.ios-selection-dot-bl { bottom: -6px; left: -6px; }
+
+/* Esses dois vão "correr" com a borda direita */
+.ios-selection-dot-tr { top: -6px; right: -6px; }
+.ios-selection-dot-br { bottom: -6px; right: -6px; }

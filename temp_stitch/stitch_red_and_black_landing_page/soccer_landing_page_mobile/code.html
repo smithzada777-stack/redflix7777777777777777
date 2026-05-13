@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,100..900;1,100..900&amp;family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error-container": "#ffdad6",
+                    "on-surface-variant": "#ebbbb4",
+                    "background": "#121414",
+                    "inverse-surface": "#e2e2e2",
+                    "surface-container-high": "#282a2b",
+                    "on-primary-fixed": "#410000",
+                    "inverse-primary": "#c00100",
+                    "secondary-container": "#4a4949",
+                    "on-error": "#690005",
+                    "surface-bright": "#38393a",
+                    "primary-fixed-dim": "#ffb4a8",
+                    "surface-container-low": "#1a1c1c",
+                    "tertiary-fixed": "#e5e2e1",
+                    "surface-container": "#1e2020",
+                    "on-secondary-container": "#bab8b7",
+                    "on-primary-fixed-variant": "#930100",
+                    "surface-container-lowest": "#0c0f0f",
+                    "on-primary": "#690100",
+                    "secondary": "#c9c6c5",
+                    "on-secondary-fixed-variant": "#474646",
+                    "inverse-on-surface": "#2f3131",
+                    "tertiary-fixed-dim": "#c8c6c5",
+                    "secondary-fixed-dim": "#c9c6c5",
+                    "on-primary-container": "#5c0000",
+                    "on-tertiary-container": "#2a2a2a",
+                    "outline": "#b18780",
+                    "surface-container-highest": "#333535",
+                    "tertiary": "#c8c6c5",
+                    "error": "#ffb4ab",
+                    "surface-variant": "#333535",
+                    "surface": "#121414",
+                    "primary-container": "#ff5540",
+                    "surface-tint": "#ffb4a8",
+                    "on-secondary": "#313030",
+                    "surface-dim": "#121414",
+                    "secondary-fixed": "#e5e2e1",
+                    "on-background": "#e2e2e2",
+                    "on-tertiary-fixed-variant": "#474746",
+                    "on-tertiary": "#313030",
+                    "on-secondary-fixed": "#1c1b1b",
+                    "on-tertiary-fixed": "#1c1b1b",
+                    "outline-variant": "#603e39",
+                    "primary": "#ffb4a8",
+                    "error-container": "#93000a",
+                    "primary-fixed": "#ffdad4",
+                    "on-surface": "#e2e2e2",
+                    "tertiary-container": "#929090"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "gutter": "24px",
+                    "margin-edge": "64px",
+                    "section-gap": "120px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Epilogue"],
+                    "body-lg": ["Lexend"],
+                    "display-xl": ["Epilogue"],
+                    "label-bold": ["Lexend"],
+                    "body-md": ["Lexend"],
+                    "headline-md": ["Epilogue"]
+            },
+            "fontSize": {
+                    "headline-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-xl": ["80px", {"lineHeight": "88px", "letterSpacing": "-0.04em", "fontWeight": "900"}],
+                    "label-bold": ["14px", {"lineHeight": "20px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["32px", {"lineHeight": "40px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .skew-hero { transform: skewY(-5deg); }
+      .unskew { transform: skewY(5deg); }
+      .bg-grid { background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.05) 1px, transparent 0); background-size: 24px 24px; }
+      .text-glow { text-shadow: 0 0 20px rgba(255, 85, 64, 0.4); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation Bar -->
+<nav class="bg-black/90 dark:bg-black/95 backdrop-blur-md text-red-600 dark:text-red-500 font-['Epilogue'] uppercase tracking-tighter font-black docked full-width top-0 z-50 border-b-2 border-red-900/30 flex justify-between items-center w-full px-6 py-4 max-w-screen-2xl mx-auto">
+<div class="text-3xl font-black italic text-red-600 dark:text-red-500 tracking-tighter">STRIKER</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-white p-2">menu</button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="min-h-screen relative">
+<!-- Hero Section Mobile Optimized -->
+<section class="relative pt-24 pb-12 overflow-hidden">
+<div class="absolute inset-0 bg-grid opacity-30"></div>
+<div class="relative px-6 flex flex-col items-center">
+<!-- Main Header with Intentional Skew -->
+<div class="z-20 w-full mb-8">
+<h1 class="font-display-xl text-display-xl text-white italic tracking-tighter flex flex-col leading-[0.85] -skew-x-12">
+<span class="text-on-primary-container">UNLEASH</span>
+<span class="text-white drop-shadow-[0_4px_10px_rgba(255,0,0,0.5)]">ELITE</span>
+<span class="text-on-primary-container">POWER</span>
+</h1>
+</div>
+<!-- Centralized Player Visual with Overflow -->
+<div class="relative w-full aspect-[4/5] z-10 flex justify-center items-end">
+<div class="absolute -bottom-4 w-[120%] h-1/2 bg-gradient-to-t from-background via-background/80 to-transparent z-10"></div>
+<div class="absolute inset-0 bg-primary-container/20 blur-[120px] rounded-full scale-125 z-0"></div>
+<img class="relative z-1 relative h-full w-auto object-cover transform scale-110 drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)]" data-alt="A professional football player in a dynamic action pose, wearing a high-performance red and black kit, captured mid-sprint against a dark stadium atmosphere. The lighting is dramatic and high-contrast, with intense red stadium spotlights creating a rim-lighting effect on the athlete. The overall mood is aggressive and focused, utilizing a gritty, brutalist aesthetic with deep blacks and vibrant red accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_0THlzhtu1_9tEt40iBiM8y0bUFPJ7MBFkiJdLIGF3tluD1Qxr7_0uafLG3MTiRidgz9vshOsx40kr8S0MeBG8Ynukqgu3p7vBu3ssp2-IluNQwW_2CVNgvtwy2rUe1Cg7Ary52WTRL3KnYzv4SpSGtRchysrWABNQgl2AuhjPIJpZFmpZttWvyPEj_WH2uSmuVe6v9WdD7e_huT5FLVIcf9kjM_Oj_QBv7Sb9LCyB5OECXN_sGwRorHVkrkPUvDv-fgcCY95s4wW"/>
+</div>
+<!-- Stats Floating Cards (Bento-style on mobile) -->
+<div class="grid grid-cols-2 gap-4 w-full mt-[-2rem] relative z-20">
+<div class="bg-surface-container border-l-4 border-primary-container p-4 backdrop-blur-md shadow-2xl">
+<p class="font-label-bold text-label-bold text-primary opacity-80 uppercase tracking-widest">Velocity</p>
+<p class="font-headline-lg text-headline-lg text-white font-black italic">34.2<span class="text-body-md font-normal">KM/H</span></p>
+</div>
+<div class="bg-surface-container border-l-4 border-primary-container p-4 backdrop-blur-md shadow-2xl">
+<p class="font-label-bold text-label-bold text-primary opacity-80 uppercase tracking-widest">Impact</p>
+<p class="font-headline-lg text-headline-lg text-white font-black italic">102<span class="text-body-md font-normal">PSI</span></p>
+</div>
+</div>
+<!-- Primary Call to Action -->
+<div class="w-full mt-8 relative z-20">
+<button class="w-full bg-primary-container text-white py-6 font-display-xl text-headline-md italic tracking-tighter uppercase skew-x-[-12deg] shadow-[8px_8px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:translate-x-1 hover:shadow-none transition-all duration-150">
+                        JOIN CLUB
+                    </button>
+<p class="text-center mt-4 font-body-md text-secondary opacity-60 italic uppercase tracking-tighter">Limited spots available for season 24/25</p>
+</div>
+</div>
+</section>
+<!-- Live Score Ticker -->
+<div class="bg-black py-3 border-y-2 border-red-900/30 overflow-hidden whitespace-nowrap">
+<div class="flex gap-12 animate-marquee font-['Lexend'] text-on-surface text-sm font-black uppercase tracking-widest">
+<span class="flex items-center gap-2"><span class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span> LIVE: STRIKER FC 3 - 1 CITY RIVALS</span>
+<span class="text-red-500">•</span>
+<span class="flex items-center gap-2">NEXT MATCH: AWAY VS UNITED KINGS (SAT 20:00)</span>
+<span class="text-red-500">•</span>
+<span class="flex items-center gap-2"><span class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span> LIVE: STRIKER FC 3 - 1 CITY RIVALS</span>
+</div>
+</div>
+<!-- Training Section -->
+<section class="px-6 py-20 bg-surface">
+<div class="mb-12 border-l-8 border-primary-container pl-6">
+<h2 class="font-display-xl text-headline-lg text-white leading-tight -skew-x-6">TRAIN LIKE<br/>A BEAST</h2>
+</div>
+<div class="space-y-6">
+<div class="relative group h-64 overflow-hidden rounded-lg">
+<img class="w-full h-full object-cover grayscale brightness-50 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" data-alt="A gritty close-up of a high-intensity football training session on a synthetic pitch at night. Cinematic overhead stadium lighting casts sharp, dramatic shadows, highlighting water droplets flying from the grass. The visual style is aggressive and performance-focused, with a heavy emphasis on deep blacks and brilliant white highlights, accented by the signature intense red glow of the brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMlsDTqQAxP53SC8MYRXeDeIMGYfz_tKItgI4tLmpHN9EgWy7jqVFac67DZczm93asFAFQFq-B9JnHsAH0Oa8qDAL7AJaCQoPtbecVdj1Mgm7hkjzC3vQYyQ20ZY_Ez1wt8jqX-sIjU9WitZxnOJ6l7lZsNzN-aFL1-pzWQkBBKotRyhaaSe48VyHZhbsTcNIe5zriNI0Li1NE_DZ4uXFcr3II-0Egg8dS2Vh4WcF-1qNg33ZeJbP0BSSOEklqUA5Mangaep2rAI42"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+<div class="absolute bottom-6 left-6">
+<span class="bg-primary-container text-white px-3 py-1 font-label-bold text-xs mb-2 inline-block skew-x-[-10deg]">LEVEL 01</span>
+<h3 class="font-headline-md text-white text-2xl uppercase italic font-black">Agility Drills</h3>
+</div>
+</div>
+<div class="relative group h-64 overflow-hidden rounded-lg">
+<img class="w-full h-full object-cover grayscale brightness-50 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" data-alt="Intense athlete workout scene showing a player pulling a heavy sled on a dark, professional turf. The atmosphere is smoky and dramatic, with a single intense red spotlight from behind creating a powerful silhouette. The image embodies elite athletic performance, using a brutalist design approach with high contrast, sharp textures, and a dark-mode aesthetic consistent with professional sports branding." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBToxmphj5zsF6kijo1mfdaJZfha9Q1h9_lr5m49Yx03Lv7BWmg-2nmOeNYw5OAQhRPLVMO-oLKfgUC65cO32lf7dZzL4fhAKL_1oxZ7rs3wiIBhazR7y5NQemW4naUIwkYajNprb7IOqwT7ZK0nlP-2T0bSAsjQcShU0pbvRgRBauljh0kmzzW3OokcTWSmfrMkjrvmHdR6juQGHLaUr_V7Bl4__-qHpDXYTJXFbxgrA0_2WcjJUFmbj-W2TYHsKzocIV_RSCeIeI2"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+<div class="absolute bottom-6 left-6">
+<span class="bg-primary-container text-white px-3 py-1 font-label-bold text-xs mb-2 inline-block skew-x-[-10deg]">LEVEL 02</span>
+<h3 class="font-headline-md text-white text-2xl uppercase italic font-black">Strength Lab</h3>
+</div>
+</div>
+</div>
+</section>
+<!-- Newsletter / Community Skewed Box -->
+<section class="px-6 py-12 relative">
+<div class="bg-primary-container -skew-y-3 p-10 relative overflow-hidden">
+<div class="unskew space-y-4">
+<h2 class="font-display-xl text-headline-lg text-white italic tracking-tighter leading-none">NEVER<br/>MISS A<br/>GOAL.</h2>
+<p class="text-on-primary font-body-md font-bold uppercase tracking-widest text-sm">Join 50k+ elite members</p>
+<div class="pt-4">
+<input class="w-full bg-white/20 border-none text-white placeholder:text-white/60 py-4 px-6 focus:ring-2 focus:ring-white mb-4 italic font-black" placeholder="EMAIL ADDRESS" type="email"/>
+<button class="w-full bg-black text-white py-4 font-label-bold tracking-widest uppercase">SUBSCRIBE</button>
+</div>
+</div>
+<!-- Abstract decorative element -->
+<div class="absolute -right-10 -bottom-10 opacity-20 transform rotate-12">
+<span class="material-symbols-outlined text-[200px] text-white">sports_soccer</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer Section -->
+<footer class="bg-black dark:bg-black full-width py-12 border-t-4 border-red-600 shadow-[0_-10px_30px_rgba(255,0,0,0.1)]">
+<div class="flex flex-col md:flex-row justify-between items-center px-10 gap-6 max-w-screen-2xl mx-auto">
+<div class="text-xl font-black text-red-600 font-['Epilogue'] tracking-tighter italic">STRIKER ELITE</div>
+<div class="flex gap-6 text-gray-500 font-['Epilogue'] text-xs font-bold tracking-widest uppercase">
+<a class="hover:text-red-400 underline decoration-2 underline-offset-4 transition-all" href="#">PRIVACY</a>
+<a class="hover:text-red-400 underline decoration-2 underline-offset-4 transition-all" href="#">TERMS</a>
+<a class="hover:text-red-400 underline decoration-2 underline-offset-4 transition-all" href="#">CONTACT</a>
+</div>
+<div class="font-['Epilogue'] text-xs font-bold tracking-widest uppercase text-gray-600">
+                © 2024 STRIKER ELITE. ALL RIGHTS RESERVED.
+            </div>
+</div>
+</footer>
+<!-- FAB Action (Contextual: Home) -->
+<button class="fixed bottom-6 right-6 w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,0,0,0.4)] z-50 transform hover:scale-110 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</button>
+</body></html>
