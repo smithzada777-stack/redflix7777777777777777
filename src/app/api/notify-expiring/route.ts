@@ -77,7 +77,7 @@ export async function GET(request: Request) {
             const alertsHtml = alerts.map(a => `<li style="margin-bottom: 8px; font-size: 14px;">${a}</li>`).join('');
 
             await resend.emails.send({
-                from: 'Sistema <sistema@redflixoficial.site>',
+                from: 'DvnFlix Alertas <onboarding@resend.dev>',
                 to: [ADMIN_EMAIL],
                 subject: `📋 ${alerts.length} assinatura(s) precisam de atenção`,
                 html: `

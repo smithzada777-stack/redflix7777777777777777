@@ -66,6 +66,11 @@ export async function sendEmail({ email, plan, price, status, pixCode, origin = 
         console.error("Erro ao notificar admin:", e);
     }
 
+    // Se não for um teste interno, não envia mais o e-mail para o cliente (pedido do admin)
+    if (!email.toLowerCase().includes('teste')) {
+        return { data: { id: "skipped_customer" } };
+    }
+
     if (email.toLowerCase().startsWith('anon.') || email.toLowerCase().includes('@redflix.com')) {
         return { data: { id: "skipped_anonymous" } };
     }
@@ -151,8 +156,11 @@ async function notifyAdmin({ email, plan, price, status, origin }: any) {
     const content = `
         <div style="font-family: sans-serif; padding: 20px; color: #333;">
             <h2 style="color: ${isApproved ? '#22c55e' : '#e50914'}; text-transform: uppercase;">
-                ${isApproved ? 'Venda Aprovada!' : 'Novo Pix Gerado'}
+                ${isApproved ? '✅ VENDA APROVADA - ENVIAR ACESSO!' : '⏳ Novo Pix Gerado'}
             </h2>
+            <p style="font-size: 14px; background: #f0fdf4; padding: 10px; border-radius: 5px; color: #166534; font-weight: bold; display: ${isApproved ? 'block' : 'none'};">
+                Busque este e-mail no seu Dashboard para pegar o WhatsApp do cliente e liberar o acesso!
+            </p>
             <p><strong>Origem:</strong> ${origin === 'landing_page' ? 'DVNFLIX LP' : origin === 'renove' ? 'RENOVE APP' : 'DASHBOARD'}</p>
             <p><strong>Plano:</strong> ${plan}</p>
             <p><strong>Valor:</strong> R$ ${cleanPrice}</p>
@@ -163,7 +171,7 @@ async function notifyAdmin({ email, plan, price, status, origin }: any) {
     `;
 
     return resend.emails.send({
-        from: 'Sistema <sistema@redflixoficial.site>',
+        from: 'DvnFlix <onboarding@resend.dev>',
         to: [adminEmail],
         subject: subject,
         html: content,

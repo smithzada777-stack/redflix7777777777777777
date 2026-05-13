@@ -211,7 +211,7 @@ function CheckoutContent() {
                 });
 
                 // Simula Pix Gerado
-                setPixCode("00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-42661417400052040000530398654041.005802BR5913RedFlix Teste6008Brasilia62070503***63041D3D");
+                setPixCode("00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-42661417400052040000530398654041.005802BR5913DvnFlix Teste6008Brasilia62070503***63041D3D");
                 setPixImage("https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Link_pra_pagina_principal_da_Wikipedia-PT_em_codigo_QR_b.svg/1200px-Link_pra_pagina_principal_da_Wikipedia-PT_em_codigo_QR_b.svg.png");
                 setActivePixId(fakeId);
                 setShowPix(true);
@@ -310,7 +310,7 @@ function CheckoutContent() {
                         <span className="text-[10px] font-black uppercase tracking-widest">Voltar</span>
                     </Link>
                     <div className="relative w-44 h-12">
-                        <Image src="https://i.imgur.com/6H5gxcw.png" alt="RedFlix" fill className="object-contain" priority />
+                        <Image src="https://i.imgur.com/MD1ffQ7.png" alt="DvnFlix" fill className="object-contain" priority />
                     </div>
                 </div>
             </nav>
@@ -369,32 +369,23 @@ function CheckoutContent() {
                                             </div>
                                             <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white tracking-widest">Pagamento Aprovado!</h3>
                                             <div className="space-y-4">
-                                                <p className="text-sm text-gray-400">
-                                                    Identificamos seu pagamento! Seus dados de acesso foram enviados agora mesmo para o e-mail:
-                                                    <span className="block text-white font-bold mt-2 bg-white/5 py-3 rounded-xl border border-white/5">{formData.email}</span>
-                                                </p>
-                                                <div className="bg-primary/5 border border-primary/20 p-4 rounded-2xl">
-                                                    <p className="text-[10px] text-primary font-black uppercase tracking-widest leading-relaxed">
-                                                        ⚠️ IMPORTANTE: Caso não encontre na caixa de entrada, verifique sua pasta de **SPAM** ou **LIXO ELETRÔNICO**.
+                                                <div className="bg-primary/10 border border-primary/20 p-5 rounded-2xl">
+                                                    <p className="text-lg text-primary font-black uppercase tracking-wide leading-relaxed">
+                                                        Irei chamar você via WhatsApp dentro de 5 minutos para passar o seu acesso.
                                                     </p>
                                                 </div>
+                                                <p className="text-sm text-gray-400">
+                                                    Chegou um e-mail com instruções para você (olhe o spam):
+                                                    <span className="block text-white font-bold mt-2 bg-white/5 py-3 rounded-xl border border-white/5">{formData.email}</span>
+                                                </p>
                                             </div>
-                                            <div className="flex flex-col gap-3">
+                                            <div className="flex flex-col gap-3 pt-4">
                                                 <button
                                                     onClick={() => router.push('/')}
                                                     className="w-full bg-white text-black font-black py-4 rounded-xl uppercase tracking-widest text-[10px] hover:bg-primary hover:text-white transition-all shadow-xl"
                                                 >
                                                     Voltar para o Início
                                                 </button>
-                                                <a
-                                                    href="https://wa.me/5571991644164?text=%20Olá,%20acabei%20de%20realizar%20o%20pagamento%20do%20meu%20plano%20RedFlix%20e%20gostaria%20de%20agilizar%20minha%20liberação."
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="w-full bg-primary/10 border border-primary/20 text-primary font-black py-4 rounded-xl uppercase tracking-widest text-[10px] hover:bg-primary/20 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <Headphones size={14} />
-                                                    Liberação Humana (WhatsApp)
-                                                </a>
                                             </div>
                                         </motion.div>
                                     ) : !showPix ? (
@@ -583,7 +574,7 @@ function CheckoutContent() {
             </main>
 
             <footer className="py-12 text-center border-t border-white/5 opacity-30 mt-10">
-                <p className="text-[9px] font-black uppercase tracking-[0.8em]">RedFlix 2026 • Todos os direitos reservados</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.8em]">DvnFlix 2026 • Todos os direitos reservados</p>
             </footer>
         </div>
     );
