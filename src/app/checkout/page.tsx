@@ -374,10 +374,6 @@ function CheckoutContent() {
                                                         Irei chamar você via WhatsApp dentro de 5 minutos para passar o seu acesso.
                                                     </p>
                                                 </div>
-                                                <p className="text-sm text-gray-400">
-                                                    Chegou um e-mail com instruções para você (olhe o spam):
-                                                    <span className="block text-white font-bold mt-2 bg-white/5 py-3 rounded-xl border border-white/5">{formData.email}</span>
-                                                </p>
                                             </div>
                                             <div className="flex flex-col gap-3 pt-4">
                                                 <button

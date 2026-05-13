@@ -583,10 +583,6 @@ function SimpleCheckoutContent() {
                                         Irei chamar você via WhatsApp dentro de 5 minutos para passar o seu acesso.
                                     </p>
                                 </div>
-                                <p className="text-gray-400 text-sm max-w-xs mx-auto">
-                                    Chegou um e-mail com instruções para você (olhe o spam):
-                                    <span className="block text-white font-black mt-2 text-lg">{formData.email}</span>
-                                </p>
                             </div>
 
                             <div className="flex flex-col gap-3 max-w-xs mx-auto pt-6">
